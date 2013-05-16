@@ -1,0 +1,73 @@
+#ifndef PROGRAM_H
+#define PROGRAM_H
+
+#include <QString>
+#include <QVector>
+#include <QMap>
+#include <memory>
+#include "terms.h"
+using namespace std;
+namespace Prolog
+{
+struct Domain
+{
+    QString name;
+    Domain(QString name) : name(name) { }
+};
+
+struct Predicate
+{
+    QString functor;
+    QVector<shared_ptr<Domain> > argDomains;
+    Predicate(QString functor) :functor(functor) { }
+    Predicate(QString functor,
+    QVector<shared_ptr<Domain> > argDomains) :
+        functor(functor), argDomains(argDomains){ }
+};
+
+struct Clause
+{
+    shared_ptr<Term::Compound> head;
+    QVector<shared_ptr<Term::Term> > body;
+    QString toString();
+};
+
+class Program
+{
+public:
+    QMap<QString, shared_ptr<Domain> > domains;
+    QMap<QString, int> structContructors;
+    QMap<QString, shared_ptr<Predicate> > predicates;
+    QMap<QString, QVector<shared_ptr<Clause> > > clauses;
+public:
+    shared_ptr<Domain> addDomain(QString name)
+    {
+        shared_ptr<Domain> d(new Domain(name));
+        domains[name] = d;
+        return d;
+    }
+    void addStruct(QString name, int arity)
+    {
+        structContructors[name] = arity;
+    }
+
+    shared_ptr<Predicate> addPredicate(QString name)
+    {
+        shared_ptr<Predicate> p(new Predicate(name));
+        predicates[name] = p;
+        return p;
+    }
+
+    shared_ptr<Clause> newClause()
+    {
+        shared_ptr<Clause> c(new Clause());
+        return c;
+    }
+
+    void addClause(shared_ptr<Clause> c)
+    {
+        clauses[c->head->functor->toString()].append(c);
+    }
+};
+}
+#endif // PROGRAM_H

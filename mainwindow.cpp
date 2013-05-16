@@ -1,0 +1,181 @@
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+
+#include "sexpressionparser.h"
+#include "wam.h"
+#include "prologlexer.h"
+#include "prologparser.h"
+#include "prologcompiler.h"
+
+MainWindow::MainWindow(QWidget *parent) :
+    QMainWindow(parent),
+    ui(new Ui::MainWindow)
+{
+    ui->setupUi(this);
+    this->setCentralWidget(ui->splitter);
+    this->setWindowState(Qt::WindowMaximized);
+    this->setWindowTitle(QString::fromStdWString(L"小さい Prolog"));
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+QString humanize(QString s)
+{
+    return s.replace("\n", "\\n").replace("\t","\\t").replace("\r", "\\r");
+}
+
+void MainWindow::on_actionRun_triggered()
+{
+   QString source = ui->txtCode->toPlainText();
+   QVector<shared_ptr<SExpression> >sexps;
+   parseWam(source, sexps);
+   runWam(sexps);
+}
+
+void MainWindow::runWam(QVector<shared_ptr<SExpression> > &sexps)
+{
+    Wam wam;
+    wam.Load(sexps);
+    wam.Init();
+    wam.Run("main");
+
+    if(wam.errors.count()> 0)
+        ui->txtMessages->append("______________________");
+
+    for(int i=0; i<wam.errors.count(); ++i)
+    {
+        ui->txtMessages->append(wam.errors[i]);
+    }
+}
+
+void MainWindow::parsePrologCode(Prolog::Program &proggy)
+{
+    QString source = ui->txtCode->toPlainText();
+    Prolog::PrologLexer lexer;
+    lexer.lexer.init(source);
+    lexer.lexer.skipTokens.insert(Prolog::Spacing);
+    lexer.lexer.tokenize();
+    ui->txtMessages->clear();
+    for(int i=0; i<SExp.lexer.acceptedTokens.count(); ++i)
+    {
+        shared_ptr<Token> tok = lexer.lexer.acceptedTokens[i];
+        ui->txtMessages->append(tok->toString());
+        ui->txtMessages->append("\n");
+    }
+    if(lexer.lexer.errors.count() > 0)
+    {
+        ui->txtMessages->append("______________________");
+    }
+    for(int i=0; i<lexer.lexer.errors.count(); ++i)
+    {
+        ui->txtMessages->append(humanize(lexer.lexer.errors[i]));
+    }
+
+    Prolog::PrologParser parser(lexer.lexer.acceptedTokens, proggy);
+    try
+    {
+        parser.parse();
+    }
+    catch(ParserException)
+    {
+
+    }
+    if(parser.errors.count() > 0)
+    {
+        ui->txtMessages->append("______________________");
+    }
+    for(int i=0; i<parser.errors.count(); ++i)
+    {
+        ui->txtMessages->append(humanize(parser.errors[i]));
+    }
+
+    for(auto i=proggy.clauses.begin(); i!= proggy.clauses.end(); ++i)
+    {
+        for(auto j=i.value().begin(); j!=i.value().end(); ++j)
+        {
+            ui->txtMessages->append((*j)->toString());
+        }
+    }
+}
+
+void MainWindow::on_actionParse_prolog_triggered()
+{
+    Prolog::Program proggy;
+    parsePrologCode(proggy);
+}
+
+void MainWindow::on_actionCompile_Prolog_triggered()
+{
+    Prolog::Program proggy;
+    parsePrologCode(proggy);
+    Prolog::PrologCompiler comp(proggy);
+    comp.compile();
+    ui->txtMessages->append(comp.getOutput());
+}
+
+void MainWindow::parseWam(QString source, QVector<shared_ptr<SExpression> >&sexps, bool verbose)
+{
+    SExp.lexer.init(source);
+    SExp.lexer.skipTokens.insert(SExp::Spacing);
+    SExp.lexer.tokenize();
+    ui->txtMessages->clear();
+    if(verbose)
+    {
+        for(int i=0; i<SExp.lexer.acceptedTokens.count(); ++i)
+        {
+            shared_ptr<Token> tok = SExp.lexer.acceptedTokens[i];
+            ui->txtMessages->append(tok->toString());
+            ui->txtMessages->append("\n");
+        }
+    }
+    if(SExp.lexer.errors.count() > 0)
+        ui->txtMessages->append("______________________");
+
+    for(int i=0; i<SExp.lexer.errors.count(); ++i)
+    {
+        ui->txtMessages->append(humanize(SExp.lexer.errors[i]));
+    }
+
+    SExpressionParser parser(SExp.lexer.acceptedTokens);
+    sexps = parser.parse();
+    if(parser.errors.count() >0)
+        ui->txtMessages->append("______________________");
+
+    for(int i=0; i<parser.errors.count(); ++i)
+    {
+        ui->txtMessages->append(humanize(parser.errors[i]));
+    }
+
+    if(verbose)
+    {
+        ui->txtMessages->append("______________________");
+
+        for(int i=0; i<sexps.count(); ++i)
+        {
+            shared_ptr<SExpression> sexp = sexps[i];
+            ui->txtMessages->append(sexp->toString());
+        }
+    }
+}
+
+void MainWindow::on_actionParse_WAM_triggered()
+{
+    QVector<shared_ptr<SExpression> > sexps;
+    QString source = ui->txtCode->toPlainText();
+    parseWam(source, sexps);
+}
+
+void MainWindow::on_actionRun_Prolog_triggered()
+{
+    Prolog::Program proggy;
+    parsePrologCode(proggy);
+    Prolog::PrologCompiler comp(proggy);
+    comp.compile();
+    QString wam = comp.getOutput();
+    QVector<shared_ptr<SExpression> > sexps;
+    parseWam(wam, sexps, false);
+    runWam(sexps);
+}
