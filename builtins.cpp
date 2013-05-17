@@ -49,10 +49,10 @@ inline bool PopStr(Wam &vm, const QString &fname, int argn, QString &ret)
 void sqrt(Wam &vm)
 {
     int ii;
-    if(!PopInt(vm, "sin", 1, ii))
+    if(!PopInt(vm, "sqrt", 1, ii))
         return;
 
-    shared_ptr<Term::Term> b = PopTerm(vm, "sin", 2);
+    shared_ptr<Term::Term> b = PopTerm(vm, "sqrt", 2);
 
     ii = ::sqrt(ii);
     shared_ptr<Term::Int> result = make_shared<Term::Int>(ii);
