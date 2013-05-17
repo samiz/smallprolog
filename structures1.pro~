@@ -1,6 +1,0 @@
-domains
-mimi=amira(int,int).
-
-clauses
-main():-amira(A,B)=X,X=amira(12,C),C=13.
-
