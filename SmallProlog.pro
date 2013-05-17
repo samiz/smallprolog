@@ -34,7 +34,8 @@ SOURCES += main.cpp\
     parsecombinators.cpp \
     parseresult.cpp \
     prologcompiler.cpp \
-    codegenhelper.cpp
+    codegenhelper.cpp \
+    builtins.cpp
 
 HEADERS  += mainwindow.h \
     lexer.h \
@@ -57,7 +58,8 @@ HEADERS  += mainwindow.h \
     parsecombinators.h \
     parseresult.h \
     prologcompiler.h \
-    codegenhelper.h
+    codegenhelper.h \
+    builtins.h
 
 FORMS    += mainwindow.ui
 

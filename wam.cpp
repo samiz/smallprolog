@@ -62,7 +62,7 @@ void Wam::processInstruction(shared_ptr<SExpression> inst, shared_ptr<Method> me
     {
         method->Instructions.append(Instruction(PushV, Term::makeSymbol(sval)));
     }
-    else if(inst->match("pushv", tail) && tail->matchLstStr(sval))
+    else if(inst->match("pushv", tail) && tail->matchLstStrGet(sval))
     {
         method->Instructions.append(Instruction(PushV, Term::makeString(sval)));
     }
@@ -90,6 +90,10 @@ void Wam::processInstruction(shared_ptr<SExpression> inst, shared_ptr<Method> me
     {
         method->Instructions.append(Instruction(Call, Term::makeSymbol(sval)));
     }
+    else if(inst->match("callex", sval))
+    {
+        method->Instructions.append(Instruction(CallEx, Term::makeSymbol(sval)));
+    }
     else if(inst->match("try_me_else", sval))
     {
         method->Instructions.append(Instruction(TryMeElse, Term::makeSymbol(sval)));
@@ -102,6 +106,22 @@ void Wam::processInstruction(shared_ptr<SExpression> inst, shared_ptr<Method> me
     {
         errors.append(QString("Invalid instruction format: %1").arg(inst->toString()));
     }
+}
+
+void nothingFunction(Wam &)
+{
+
+}
+
+void Wam::RegisterExternal(QString name, function<void(Wam &)> f)
+{
+    externalMethods[name] = f;
+}
+
+void Wam::error(QString s)
+{
+    errors.append(s);
+    done = true;
 }
 
 void Wam::Init()
@@ -185,6 +205,13 @@ void Wam::Run(QString main)
             callStack.push(f2);
             IP = 0;
             currentFrame = callStack.count()-1;
+            break;
+        case CallEx:
+        {
+            function<void(Wam &)> f =
+                    externalMethods.value(i.arg->toString(), nothingFunction);
+            f(*this);
+        }
             break;
         case TryMeElse:
             cp = ChoicePoint();
@@ -451,6 +478,7 @@ QString OpcodeToString(OpCode op)
     case NewObj: return "NewObj";
     case Unify: return "Unify";
     case Call: return "Call";
+    case CallEx: return "CallEx";
     case TryMeElse: return "TryMeElse";
     case Proceed: return "Proceed";
     }

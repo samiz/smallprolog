@@ -78,7 +78,14 @@ void PrologCompiler::compileClause(QVector<shared_ptr<Clause> > &clauseBodies)
                         generateExpression(targ, vars);
                     }
                     // done pushing args
-                    g.gen("(call %1)", tc->functor->toString());
+                    if(program.externalMethods.contains(tc->functor->toString()))
+                    {
+                        g.gen("(callex %1)", tc->functor->toString());
+                    }
+                    else
+                    {
+                        g.gen("(call %1)", tc->functor->toString());
+                    }
                 }
             }
         }

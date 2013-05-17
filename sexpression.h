@@ -28,6 +28,8 @@ struct SExpression
     virtual bool match(QString s, QString &s2, int &i, shared_ptr<List> &tail) { return false; }
     virtual bool matchLst(QString s) { return false; }
     virtual bool matchLstStr(QString s) { return false; }
+    virtual bool matchLstStrGet(QString &s) { return false; }
+
 
     virtual QString toString()=0;
 };
@@ -228,6 +230,19 @@ struct Pair : public List
     virtual bool matchLstStr(QString s)
     {
         if(head->matchStr(s))
+        {
+            shared_ptr<Nil> t1 = dynamic_pointer_cast<Nil>(this->tail);
+            if(t1)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    virtual bool matchLstStrGet(QString &s)
+    {
+        if(head->matchStrGet(s))
         {
             shared_ptr<Nil> t1 = dynamic_pointer_cast<Nil>(this->tail);
             if(t1)

@@ -4,6 +4,7 @@
 #include <QString>
 #include <QVector>
 #include <QMap>
+#include <QSet>
 #include <memory>
 #include "terms.h"
 using namespace std;
@@ -39,6 +40,7 @@ public:
     QMap<QString, int> structContructors;
     QMap<QString, shared_ptr<Predicate> > predicates;
     QMap<QString, QVector<shared_ptr<Clause> > > clauses;
+    QSet<QString> externalMethods;
 public:
     shared_ptr<Domain> addDomain(QString name)
     {

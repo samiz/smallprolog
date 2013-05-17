@@ -4,9 +4,11 @@
 #include <QString>
 #include <QStack>
 #include <QMap>
+#include <functional>
 #include "sexpression.h"
 #include "terms.h"
 
+using namespace std;
 enum OpCode
 {
     PushV,
@@ -16,6 +18,7 @@ enum OpCode
     NewObj,
     Unify,
     Call,
+    CallEx,
     TryMeElse,
     Proceed
 };
@@ -51,7 +54,6 @@ struct Frame
     QMap<QString, shared_ptr<Term::Term> > Environment;
     int Ip;
     int parentFrame;
-
 };
 
 struct Binding
@@ -68,28 +70,35 @@ struct Binding
 
 QString EnvToString(QMap<QString, shared_ptr<Term::Term> > env);
 
+class Wam;
+void nothingFunction(Wam &);
+
 class Wam
 {
-public:
-    QVector<QMap<QString, shared_ptr<Term::Term> > > solutions;
-    QStringList errors;
+
     int newVarCount;
+public:
+    QStringList errors;
+    QVector<QMap<QString, shared_ptr<Term::Term> > > solutions;
     bool result;
     bool done;
-private:
+public:
     QMap<QString, int> structArities;
     QStack<Frame> callStack;
     QStack<shared_ptr<Term::Term> > operandStack;
     QStack<Binding> trail;
     QStack<ChoicePoint> choicePoints;
     QMap<QString, shared_ptr<Method> > predicates;
+    QMap<QString, function<void(Wam &)> > externalMethods;
     int IP;
     int currentFrame;
 public:
     void Load(QVector<shared_ptr<SExpression> >code);
     void Init();
     void Run(QString main);
-private:
+    void RegisterExternal(QString name, function<void(Wam &)> f);
+    void error(QString s);
+public:
     void processInstruction(shared_ptr<SExpression> inst, shared_ptr<Method> method, int &count);
     void backtrack();
     void bind(QString, const shared_ptr<Term::Term> &val);

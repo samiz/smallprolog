@@ -6,6 +6,7 @@
 #include "prologlexer.h"
 #include "prologparser.h"
 #include "prologcompiler.h"
+#include "builtins.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -39,6 +40,12 @@ void MainWindow::runWam(QVector<shared_ptr<SExpression> > &sexps)
 {
     Wam wam;
     wam.Load(sexps);
+    wam.RegisterExternal("sqrt", Prolog::sqrt);
+    wam.RegisterExternal("+", Prolog::plus);
+    wam.RegisterExternal("-", Prolog::minus);
+    wam.RegisterExternal("/", Prolog::div);
+    wam.RegisterExternal("*", Prolog::mul);
+    wam.RegisterExternal("++", Prolog::concat);
     wam.Init();
     wam.Run("main");
 
@@ -76,6 +83,14 @@ bool MainWindow::parsePrologCode(Prolog::Program &proggy)
         ui->txtMessages->append(humanize(lexer.lexer.errors[i]));
     }
 
+    proggy.externalMethods.insert("sqrt");
+    proggy.externalMethods.insert("+");
+    proggy.externalMethods.insert("-");
+    proggy.externalMethods.insert("/");
+    proggy.externalMethods.insert("*");
+    proggy.externalMethods.insert("++");
+    proggy.addStruct("pair", 2);
+    proggy.addStruct("nil", 0);
     Prolog::PrologParser parser(lexer.lexer.acceptedTokens, proggy);
     try
     {
@@ -181,6 +196,7 @@ void MainWindow::on_actionRun_Prolog_triggered()
     if(!success)
         return;
     Prolog::PrologCompiler comp(proggy);
+
     comp.compile();
     QString wam = comp.getOutput();
     QVector<shared_ptr<SExpression> > sexps;

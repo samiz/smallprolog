@@ -29,15 +29,15 @@ PrologLexer::PrologLexer()
     shared_ptr<RegExp> smallLetter = charIs([](QChar c){return c.isLower();}, "<lowercase>");
     shared_ptr<RegExp> capitalLetter = charIs([](QChar c){return c.isUpper();}, "<uppercase>");
     shared_ptr<RegExp> alpha = charIs([](QChar c){return c.isLetterOrNumber();},"<alphanumeric>");
-    shared_ptr<RegExp> symbol = charOf("_");
+    shared_ptr<RegExp> symbol = charOf("+-/*");
     shared_ptr<RegExp> digits = seq(loop1(digit), checkNo(letter));
-    //shared_ptr<RegExp> letterOrSymbol = choice(letter, symbol);
+    shared_ptr<RegExp> smallLetterOrSymbol = choice(smallLetter, symbol);
     shared_ptr<RegExp> alphaOrSymbol = choice(alpha, symbol);
 
     lexer.rules[Prolog::Num] = seq(digits,
                                  optional(seq(str("."), digits)));
 
-    lexer.rules[Prolog::Symbol] = seq(smallLetter, loop(choice(digit, alphaOrSymbol)));
+    lexer.rules[Prolog::Symbol] = seq(smallLetterOrSymbol, loop(choice(digit, alphaOrSymbol)));
     lexer.rules[Prolog::Variable] = seq(choice(capitalLetter, str("_")),
                                         loop(choice(digit, alphaOrSymbol)));
 

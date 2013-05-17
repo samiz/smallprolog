@@ -157,6 +157,11 @@ shared_ptr<Term::Term> PrologParser::simpleTerm()
     {
         return shared_ptr<Term::Term>(new Term::Int(chomp()->Lexeme.toInt()));
     }
+    else if(LA(Prolog::Str))
+    {
+        shared_ptr<Token> t = chomp();
+        return make_shared<Term::String>(t->Lexeme.mid(1, t->Lexeme.length()-2));
+    }
     else if(LA(Prolog::Variable))
     {
         return shared_ptr<Term::Term>(new Term::Id(chomp()->Lexeme));
@@ -218,6 +223,7 @@ shared_ptr<Term::Term> PrologParser::simpleTerm()
 bool PrologParser::LA_first_term()
 {
     return LA(Prolog::Symbol) || LA(Prolog::Num) || LA(Prolog::Variable)
+            || LA(Prolog::Str)
             || LA(Prolog::LBracket);
 }
 
