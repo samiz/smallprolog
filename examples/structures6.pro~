@@ -1,0 +1,11 @@
+domains
+list=nil();pair(any,any).
+clauses
+
+append([],X,X).
+append([X|Y],Z,[X|W]) :- append(Y,Z,W).  
+
+reverse([], []).
+reverse([H|T], Ret):- reverse(T, T1), append(T1,[H], Ret).
+
+main():-reverse([1,2,3,4,5],X).
