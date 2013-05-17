@@ -10,6 +10,10 @@ namespace Prolog
         // to prioritize so make sure
         // to have keyword types come before the type 'Symbol'
 
+        // For now we'll consider '=' a symbol character except when
+        // on its own, so make 'Eq' come before 'Symbol'
+
+        Eq,
         DomainsKw,
         PredicatesKw,
         ClausesKw,
@@ -23,7 +27,11 @@ namespace Prolog
         OnlyIf,
         LBracket,
         RBracket,
-        Eq,
+        Lt,
+        Gt,
+        Le,
+        Ge,
+        Ne,
         Dot,
         Comma,
         Semi,

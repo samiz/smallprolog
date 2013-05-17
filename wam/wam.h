@@ -6,7 +6,7 @@
 #include <QMap>
 #include <functional>
 #include "../data/sexpression.h"
-#include "../data/terms.h"
+#include "operandstack.h"
 
 using namespace std;
 enum OpCode
@@ -56,18 +56,6 @@ struct Frame
     int parentFrame;
 };
 
-struct Binding
-{
-    QString var;
-    shared_ptr<Term::Term> val;
-    Binding(QString var, shared_ptr<Term::Term> val)
-        :var(var), val(val)
-    {
-    }
-
-    Binding() { }
-};
-
 QString EnvToString(QMap<QString, shared_ptr<Term::Term> > env);
 
 class Wam;
@@ -85,26 +73,26 @@ public:
 public:
     QMap<QString, int> structArities;
     QStack<Frame> callStack;
-    QStack<shared_ptr<Term::Term> > operandStack;
-    QStack<Binding> trail;
+    OperandStack operandStack;
+    TrailStack trail;
     QStack<ChoicePoint> choicePoints;
     QMap<QString, shared_ptr<Method> > predicates;
     QMap<QString, function<void(Wam &)> > externalMethods;
     int IP;
     int currentFrame;
 public:
-    void Load(QVector<shared_ptr<SExpression> >code);
+    void Load(const QVector<shared_ptr<SExpression> > &code);
     void Init();
     void Run(QString main);
     void RegisterExternal(QString name, function<void(Wam &)> f);
     void error(QString s);
 public:
-    void processInstruction(shared_ptr<SExpression> inst, shared_ptr<Method> method, int &count);
+    void processInstruction(shared_ptr<SExpression> inst, const shared_ptr<Method> &method, int &count);
     void backtrack();
-    void bind(QString, const shared_ptr<Term::Term> &val);
+    void bind(uint, const shared_ptr<Term::Term> &val);
     bool unifyCompound(shared_ptr<Term::Term> t1, shared_ptr<Term::Term> t2);
     bool unify(shared_ptr<Term::Term> t1, shared_ptr<Term::Term> t2);
-    bool lookup(QString, shared_ptr<Term::Term> &ret, int &bindIndex);
+    bool lookup(uint, shared_ptr<Term::Term> &ret);
     QString dumpTrail();
     bool ground(const shared_ptr<Term::Term> &t, shared_ptr<Term::Term> &ret);
     void fail();

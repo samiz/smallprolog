@@ -8,6 +8,19 @@ inline shared_ptr<Term::Term> PopTerm(Wam &wam, const QString &, int)
     return wam.operandStack.pop();
 }
 
+inline bool PopGround(Wam &vm, const QString &fname, int argn, shared_ptr<Term::Term> &ret)
+{
+    shared_ptr<Term::Term> a = vm.operandStack.pop();
+    shared_ptr<Term::Term> ag;
+    if(!vm.ground(a, ag))
+    {
+        vm.error(QString("%1: argument %2 not ground term").arg(fname).arg(argn));
+        return false;
+    }
+    ret = ag;
+    return true;
+}
+
 inline bool PopInt(Wam &vm, const QString &fname, int argn, int &ret)
 {
     shared_ptr<Term::Term> a = vm.operandStack.pop();
@@ -134,6 +147,75 @@ void concat(Wam &vm)
     shared_ptr<Term::String> result = make_shared<Term::String>(r);
     vm.unify(result, c);
 }
+
+void lt(Wam &vm)
+{
+    shared_ptr<Term::Term> a,b;
+    if(!(PopGround(vm,"<",1, a)
+         && PopGround(vm,"<", 2, b)))
+    {
+        return;
+    }
+    if(!(a->lt(b)))
+        vm.fail();
+}
+
+void gt(Wam &vm)
+{
+    shared_ptr<Term::Term> a,b;
+    if(!(PopGround(vm,">",1, a)
+         && PopGround(vm,">", 2, b)))
+    {
+        return;
+    }
+    if(!atomic(a->tag) || a->tag!=b->tag || a->lt(b) || a->equals(b))
+    {
+        vm.fail();
+    }
+}
+
+void le(Wam &vm)
+{
+    shared_ptr<Term::Term> a,b;
+    if(!(PopGround(vm,"<=",1, a)
+         && PopGround(vm,"<=", 2, b)))
+    {
+        return;
+    }
+    if(!a->lt(b) || !a->equals(b))
+    {
+        vm.fail();
+    }
+}
+
+void ge(Wam &vm)
+{
+    shared_ptr<Term::Term> a,b;
+    if(!(PopGround(vm,">=",1, a)
+         && PopGround(vm,">=", 2, b)))
+    {
+        return;
+    }
+    if(!atomic(a->tag) || a->tag !=b->tag || a->lt(b))
+    {
+        vm.fail();
+    }
+}
+
+void ne(Wam &vm)
+{
+    shared_ptr<Term::Term> a,b;
+    if(!(PopGround(vm,"<>",1, a)
+         && PopGround(vm,"<>", 2, b)))
+    {
+        return;
+    }
+    if(!a->equals(b))
+    {
+        vm.fail();
+    }
+}
+
 
 
 }

@@ -13,7 +13,7 @@ SExpressionLexer::SExpressionLexer()
     shared_ptr<RegExp> digit = charIs([](QChar c){return c.isDigit();},"<digit>");
     shared_ptr<RegExp> letter = charIs([](QChar c){return c.isLetter();}, "<letter>");
     shared_ptr<RegExp> alpha = charIs([](QChar c){return c.isLetterOrNumber();},"<alphanumeric>");
-    shared_ptr<RegExp> symbol = charOf("+-/*=!?%_");
+    shared_ptr<RegExp> symbol = charOf("+-/*=!?%_<>");
     shared_ptr<RegExp> digits = seq(loop1(digit), checkNo(letter));
     shared_ptr<RegExp> letterOrSymbol = choice(letter, symbol);
     shared_ptr<RegExp> alphaOrSymbol = choice(alpha, symbol);

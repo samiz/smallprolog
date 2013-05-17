@@ -8,6 +8,8 @@
 #include "./wam/wam.h"
 #include "./wam/builtins.h"
 
+#include <sys/time.h>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -36,6 +38,18 @@ void MainWindow::on_actionRun_triggered()
    runWam(sexps);
 }
 
+// In microseconds
+long get_time()
+{
+    /*
+    timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    */
+    timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
 void MainWindow::runWam(QVector<shared_ptr<SExpression> > &sexps)
 {
     Wam wam;
@@ -46,8 +60,18 @@ void MainWindow::runWam(QVector<shared_ptr<SExpression> > &sexps)
     wam.RegisterExternal("/", Prolog::div);
     wam.RegisterExternal("*", Prolog::mul);
     wam.RegisterExternal("++", Prolog::concat);
+
+    wam.RegisterExternal(">", Prolog::gt);
+    wam.RegisterExternal("<", Prolog::lt);
+    wam.RegisterExternal(">=", Prolog::ge);
+    wam.RegisterExternal("<=", Prolog::le);
+    wam.RegisterExternal("<>", Prolog::ne);
+
     wam.Init();
+    long a,b;
+    a = get_time();
     wam.Run("main");
+    b = get_time();
 
     if(wam.errors.count()> 0)
         ui->txtMessages->append("______________________");
@@ -56,6 +80,7 @@ void MainWindow::runWam(QVector<shared_ptr<SExpression> > &sexps)
     {
         ui->txtMessages->append(wam.errors[i]);
     }
+    ui->txtMessages->append(QString("Interpreter executed in %1 ms").arg((b-a)/1000));
 }
 
 bool MainWindow::parsePrologCode(Prolog::Program &proggy)
@@ -89,6 +114,12 @@ bool MainWindow::parsePrologCode(Prolog::Program &proggy)
     proggy.externalMethods.insert("/");
     proggy.externalMethods.insert("*");
     proggy.externalMethods.insert("++");
+    proggy.externalMethods.insert("<");
+    proggy.externalMethods.insert(">");
+    proggy.externalMethods.insert("<=");
+    proggy.externalMethods.insert(">=");
+    proggy.externalMethods.insert("<>");
+
     proggy.addStruct("pair", 2);
     proggy.addStruct("nil", 0);
     Prolog::PrologParser parser(lexer.lexer.acceptedTokens, proggy);

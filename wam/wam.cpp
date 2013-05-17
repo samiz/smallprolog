@@ -1,11 +1,11 @@
 #include "wam.h"
 #include <QDebug>
 
-void Wam::Load(QVector<shared_ptr<SExpression> > code)
+void Wam::Load(QVector<shared_ptr<SExpression> > const &code)
 {
     for(auto i=code.begin(); i!=code.end(); ++i)
     {
-        shared_ptr<SExpression> expr = *i;
+        const shared_ptr<SExpression> &expr = *i;
         shared_ptr<List> rest;
         QString predName, structName;
         int arity;
@@ -20,7 +20,9 @@ void Wam::Load(QVector<shared_ptr<SExpression> > code)
             });
             predicates[predName] = method;
             //errors.append(QString("Loaded %1").arg(method->toString()));
+#ifdef QT_DEBUG
             qDebug() << "Loaded: " << method->toString();
+#endif
         }
         else if(expr->match("struct", structName, arity, rest))
         {
@@ -33,7 +35,7 @@ void Wam::Load(QVector<shared_ptr<SExpression> > code)
     }
 }
 
-void Wam::processInstruction(shared_ptr<SExpression> inst, shared_ptr<Method> method, int &count)
+void Wam::processInstruction(shared_ptr<SExpression> inst, shared_ptr<Method> const &method, int &count)
 {
     int ival;
     QString sval;
@@ -160,19 +162,20 @@ void Wam::Run(QString main)
             break;
         case PushLocal:
             operandStack.push(frame.Environment[i.arg->toString()]);
+#ifdef QT_DEBUG
             qDebug() << "Pushing " << frame.Environment[i.arg->toString()]->toString() << "\n";
+#endif
             break;
         case PopLocal:
             frame.Environment[i.arg->toString()] = operandStack.pop();
             break;
         case NewVar:
-            operandStack.push(Term::makeVar(QString("v%1").arg(newVarCount++)));
+            operandStack.push(Term::makeVar(newVarCount++));
             break;
         case NewObj:
             if(structArities.contains(i.arg->toString()))
             {
-                shared_ptr<Term::Compound> s(new Term::Compound());
-                s->functor = dynamic_pointer_cast<Term::Atom>(i.arg);
+                shared_ptr<Term::Compound> s(Term::makeCompound(i.arg->toString()));
                 int arity = structArities[i.arg->toString()];
                 for(int i=0; i<arity; i++)
                 {
@@ -199,8 +202,10 @@ void Wam::Run(QString main)
             f2.Ip = IP;
             f2.method = predicates[i.arg->toString()];
             f2.parentFrame = currentFrame;
+#ifdef QT_DEBUG
             qDebug() << "Calling: " << i.arg->toString()
                  << " from " << callStack[currentFrame].method->name;
+#endif
             f2.Environment = QMap<QString, shared_ptr<Term::Term> >();
             callStack.push(f2);
             IP = 0;
@@ -224,7 +229,9 @@ void Wam::Run(QString main)
             if(currentFrame==0)
             {
                 result = true;
+#ifdef QT_DEBUG
                 qDebug() << dumpTrail();
+#endif
                 errors.append(EnvToString(resolveAll(callStack[0].Environment)));
                 solutions.append(resolveAll(callStack[0].Environment));
                 if(!choicePoints.empty())
@@ -250,7 +257,9 @@ void Wam::backtrack()
     currentFrame = cp.frameIndex;
     while(trail.count() > cp.trailIndex)
         trail.pop();
+#ifdef QT_DEBUG
     qDebug() << "Backtrack to: " << cp.continuation;
+#endif
     IP = callStack[currentFrame].method->labels[cp.continuation];
 }
 
@@ -271,9 +280,8 @@ bool Wam::ground(shared_ptr<Term::Term> const &t, shared_ptr<Term::Term> &ret)
     }
     else if(t->tag == Term::TermVar)
     {
-        int i;
         shared_ptr<Term::Term> r;
-        bool b = lookup(t->toString(), r, i);
+        bool b = lookup(t->var(), r);
         if(!b)
             return false;
         if(r->tag==Term::TermVar)
@@ -283,8 +291,7 @@ bool Wam::ground(shared_ptr<Term::Term> const &t, shared_ptr<Term::Term> &ret)
     if(t->tag == Term::TermCompund)
     {
         shared_ptr<Term::Compound> t1 = dynamic_pointer_cast<Term::Compound>(t);
-        shared_ptr<Term::Compound> t2 = shared_ptr<Term::Compound>(new Term::Compound());
-        t2->functor = t1->functor;
+        shared_ptr<Term::Compound> t2 = Term::makeCompound(t1->functor->toString());
         shared_ptr<Term::Term> arg;
         for(int i=0; i<t1->args.count();++i)
         {
@@ -298,13 +305,14 @@ bool Wam::ground(shared_ptr<Term::Term> const &t, shared_ptr<Term::Term> &ret)
     }
 }
 
-void Wam::bind(QString var, shared_ptr<Term::Term> const &val)
+void Wam::bind(uint var, shared_ptr<Term::Term> const &val)
 {
+#ifdef QT_DEBUG
     qDebug() << "Unify: binding " << var << " and "
          << val->toString() << endl;
+#endif
     shared_ptr<Term::Term> boundVar;
-    int i;
-    if(lookup(var, boundVar, i))
+    if(lookup(var, boundVar))
     {
         shared_ptr<Term::Var> bv = dynamic_pointer_cast<Term::Var>(boundVar);
         trail.push(Binding(bv->name, val));
@@ -334,16 +342,14 @@ bool Wam::unifyCompound(shared_ptr<Term::Term> t1, shared_ptr<Term::Term> t2)
 
 bool Wam::unify(shared_ptr<Term::Term> t1, shared_ptr<Term::Term> t2)
 {
-    int t1Bind, t2Bind;
-
     if(t1->tag == Term::TermVar)
     {
-        lookup(t1->toString(), t1, t1Bind);
+        lookup(t1->var(), t1);
     }
 
     if(t2->tag == Term::TermVar)
     {
-        lookup(t2->toString(), t2, t2Bind);
+        lookup(t2->var(), t2);
     }
 
     bool t1Ground = t1->ground();
@@ -370,20 +376,22 @@ bool Wam::unify(shared_ptr<Term::Term> t1, shared_ptr<Term::Term> t2)
 
     if(t1Var && !t2Var)
     {
-        trail.push(Binding(t1->toString(), t2));
+        trail.push(Binding(t1->var(), t2));
         return true;
     }
 
     if(!t1Var && t2Var)
     {
-        trail.push(Binding(t2->toString(), t1));
+        trail.push(Binding(t2->var(), t1));
         return true;
     }
 
     // both free vars
+#ifdef QT_DEBUG
     qDebug() << "Trail..." << dumpTrail();
-    QString t1s = t1->toString();
-    QString t2s = t2->toString();
+#endif
+    uint t1s = t1->var();
+    uint t2s = t2->var();
     if(t1s < t2s)
     {
         swap(t1s, t2s);
@@ -394,22 +402,19 @@ bool Wam::unify(shared_ptr<Term::Term> t1, shared_ptr<Term::Term> t2)
     return true;
 }
 
-bool Wam::lookup(QString v,
-                 shared_ptr<Term::Term> &ret,
-                 int &bindIndex)
+bool Wam::lookup(uint v,
+                 shared_ptr<Term::Term> &ret)
 {
-    bindIndex = -1;
-    for(int i=trail.count()-1; i>=0; --i)
+    for(auto i=trail.begin(); i!=trail.end(); ++i)
     {
-        Binding &b = trail[i];
+        const Binding &b = *i;
         if(b.var == v)
         {
-            bindIndex = i;
-            if(b.val->tag == Term::TermVar)
+            const shared_ptr<Term::Term> &v2 = b.val;
+            if(v2->tag == Term::TermVar)
             {
-                shared_ptr<Term::Var> v2 = dynamic_pointer_cast<Term::Var>(b.val);
-                if(v2->toString() != v)
-                    return lookup(v2->name, ret, bindIndex);
+                if(v2->var() != v)
+                    return lookup(v2->var(), ret);
                 else
                 {
                     ret = v2;
@@ -429,9 +434,9 @@ bool Wam::lookup(QString v,
 QString Wam::dumpTrail()
 {
     QStringList ret;
-    for(int i=trail.count()-1; i>=0; i--)
+    for(auto i=trail.begin(); i!=trail.end(); ++i)
     {
-        ret.append(QString("%1 -> %2").arg(trail[i].var).arg(trail[i].val->toString()));
+        ret.append(QString("v%1 -> %2").arg((*i).var).arg((*i).val->toString()));
     }
     return QString("Trail: [%1]-").arg(ret.join(", "));
 }
@@ -449,7 +454,9 @@ QMap<QString, shared_ptr<Term::Term> > Wam::resolveAll
             shared_ptr<Term::Var> vt = dynamic_pointer_cast<Term::Var>(t);
             if(!ground(vt, t2))
             {
+#ifdef QT_DEBUG
                 qDebug() << "Free variable " << t->toString() << " on goal succcess";
+#endif
                 continue;
             }
             else
@@ -458,7 +465,9 @@ QMap<QString, shared_ptr<Term::Term> > Wam::resolveAll
                     ret[i.key()] = t2;
                 else
                 {
+#ifdef QT_DEBUG
                     qDebug() << "Bug! binding is null";
+#endif
                 }
             }
         }

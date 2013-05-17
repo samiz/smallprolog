@@ -132,9 +132,7 @@ shared_ptr<Term::Term> PrologParser::term()
     {
         match(Prolog::Eq);
         shared_ptr<Term::Term> t2 = simpleTerm();
-        shared_ptr<Term::Compound> ret(new Term::Compound());
-
-        ret->functor = shared_ptr<Term::Symbol>(new Term::Symbol("="));
+        shared_ptr<Term::Compound> ret=Term::makeCompound("=");
         ret->args.append(t1);
         ret->args.append(t2);
 
@@ -151,20 +149,20 @@ shared_ptr<Term::Term> PrologParser::simpleTerm()
     }
     else if(LA(Prolog::Symbol))
     {
-        return shared_ptr<Term::Term>(new Term::Symbol(chomp()->Lexeme));
+        return Term::makeSymbol(chomp()->Lexeme);
     }
     else if(LA(Prolog::Num))
     {
-        return shared_ptr<Term::Term>(new Term::Int(chomp()->Lexeme.toInt()));
+        return Term::makeInt(chomp()->Lexeme.toInt());
     }
     else if(LA(Prolog::Str))
     {
         shared_ptr<Token> t = chomp();
-        return make_shared<Term::String>(t->Lexeme.mid(1, t->Lexeme.length()-2));
+        return Term::makeString(t->Lexeme.mid(1, t->Lexeme.length()-2));
     }
     else if(LA(Prolog::Variable))
     {
-        return shared_ptr<Term::Term>(new Term::Id(chomp()->Lexeme));
+        return Term::makeId(chomp()->Lexeme);
     }
     else if(LA(Prolog::LBracket))
     {
@@ -187,15 +185,13 @@ shared_ptr<Term::Term> PrologParser::simpleTerm()
             }
             else
             {
-                shared_ptr<Term::Compound> t2 = shared_ptr<Term::Compound>(new Term::Compound());
-                t2->functor = shared_ptr<Term::Symbol>(new Term::Symbol("nil"));
+                shared_ptr<Term::Compound> t2 = Term::makeCompound("nil");
                 tail = t2;
             }
             shared_ptr<Term::Term> *current = &ret;
             for(int i=0; i<elements.count(); ++i)
             {
-                shared_ptr<Term::Compound> c2 = shared_ptr<Term::Compound>(new Term::Compound());
-                c2->functor = shared_ptr<Term::Symbol>(new Term::Symbol("pair"));
+                shared_ptr<Term::Compound> c2 = Term::makeCompound("pair");
                 c2->args.append(elements[i]);
                 c2->args.append(shared_ptr<Term::Compound>());
                 *current = c2;
@@ -205,8 +201,7 @@ shared_ptr<Term::Term> PrologParser::simpleTerm()
         }
         else
         {
-            shared_ptr<Term::Compound> c2 = shared_ptr<Term::Compound>(new Term::Compound());
-            c2->functor = shared_ptr<Term::Symbol>(new Term::Symbol("nil"));
+            shared_ptr<Term::Compound> c2 = Term::makeCompound("nil");
             ret = c2;
         }
 
@@ -229,7 +224,7 @@ bool PrologParser::LA_first_term()
 
 shared_ptr<Term::Compound> PrologParser::compound()
 {
-    shared_ptr<Term::Symbol> functor(new Term::Symbol(chomp()->Lexeme));
+    shared_ptr<Term::Symbol> functor = Term::makeSymbol(chomp()->Lexeme);
     QVector<shared_ptr<Term::Term> > elements;
     match(Prolog::LParen);
     if(LA_first_term())
@@ -242,7 +237,7 @@ shared_ptr<Term::Compound> PrologParser::compound()
         }
     }
     match(Prolog::RParen);
-    shared_ptr<Term::Compound> ret(new Term::Compound());
+    shared_ptr<Term::Compound> ret=Term::makeCompound(functor->toString());
     ret->functor = functor;
     ret->args +=elements;
     return ret;

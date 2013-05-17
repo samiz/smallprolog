@@ -35,7 +35,9 @@ SOURCES += main.cpp\
     parsers/parseresult.cpp \
     compiler/prologcompiler.cpp \
     compiler/codegenhelper.cpp \
-    wam/builtins.cpp
+    wam/builtins.cpp \
+    wam/stack.cpp \
+    wam/binding.cpp
 
 HEADERS  += mainwindow.h \
     lexers/lexer.h \
@@ -59,7 +61,10 @@ HEADERS  += mainwindow.h \
     parsers/parseresult.h \
     compiler/prologcompiler.h \
     compiler/codegenhelper.h \
-    wam/builtins.h
+    wam/builtins.h \
+    wam/stack.h \
+    wam/operandstack.h \
+    wam/binding.h
 
 FORMS    += mainwindow.ui
 

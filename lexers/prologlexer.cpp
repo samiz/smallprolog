@@ -12,6 +12,13 @@ PrologLexer::PrologLexer()
     lexer.rules[Prolog::RBracket] = str("]");
     lexer.rules[Prolog::OnlyIf] = str(":-");
     lexer.rules[Prolog::Eq] = str("=");
+    /*
+    lexer.rules[Prolog::Lt] = str("<");
+    lexer.rules[Prolog::Gt] = str(">");
+    lexer.rules[Prolog::Le] = str("<=");
+    lexer.rules[Prolog::Ge] = str(">=");
+    lexer.rules[Prolog::Ne] = str("<>");
+    */
     lexer.rules[Prolog::Dot] = str(".");
     lexer.rules[Prolog::Comma] = str(",");
     lexer.rules[Prolog::Semi] = str(";");
@@ -29,7 +36,7 @@ PrologLexer::PrologLexer()
     shared_ptr<RegExp> smallLetter = charIs([](QChar c){return c.isLower();}, "<lowercase>");
     shared_ptr<RegExp> capitalLetter = charIs([](QChar c){return c.isUpper();}, "<uppercase>");
     shared_ptr<RegExp> alpha = charIs([](QChar c){return c.isLetterOrNumber();},"<alphanumeric>");
-    shared_ptr<RegExp> symbol = charOf("+-/*");
+    shared_ptr<RegExp> symbol = charOf("+-/*<>=");
     shared_ptr<RegExp> digits = seq(loop1(digit), checkNo(letter));
     shared_ptr<RegExp> smallLetterOrSymbol = choice(smallLetter, symbol);
     shared_ptr<RegExp> alphaOrSymbol = choice(alpha, symbol);
@@ -58,6 +65,11 @@ PrologLexer::PrologLexer()
         case LBracket: return "LBracket";
         case RBracket: return "RBracket";
         case Eq: return "Eq";
+        case Lt: return "Lt";
+        case Gt: return "Gt";
+        case Le: return "Le";
+        case Ge: return "Ge";
+        case Ne: return "Ne";
         case Dot: return "Dot";
         case Comma: return "Comma";
         case Semi: return "Semi";

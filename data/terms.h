@@ -4,6 +4,7 @@
 #include <memory>
 #include <QStringList>
 #include <QVector>
+#include <QDebug>
 using namespace std;
 
 namespace Term
@@ -18,6 +19,8 @@ enum Tag
     TermCompund
 };
 
+
+
 inline bool atomic(Tag tag)
 {
     return tag == TermInt || tag == TermSymbol || tag == TermStr;
@@ -29,7 +32,12 @@ struct Term
     Term(Tag tag): tag(tag) { }
     virtual QString toString()=0;
     virtual bool equals(shared_ptr<Term>) { return false; }
+    virtual bool lt(const shared_ptr<Term> &)
+    {
+        return false;
+    }
     virtual bool ground() { return false; }
+    virtual uint var() { return -1;}
 };
 
 struct Atom : public Term
@@ -52,6 +60,15 @@ struct Int : public Atom
         }
         return false;
     }
+    bool lt(const shared_ptr<Term> &t2)
+    {
+        shared_ptr<Int> t22 = dynamic_pointer_cast<Int>(t2);
+        if(t22)
+        {
+            return this->value < t22->value;
+        }
+        return false;
+    }
 };
 
 struct Symbol : public Atom
@@ -65,6 +82,15 @@ struct Symbol : public Atom
         if(t22)
         {
             return t22->value == this->value;
+        }
+        return false;
+    }
+    bool lt(const shared_ptr<Term> &t2)
+    {
+        shared_ptr<Symbol> t22 = dynamic_pointer_cast<Symbol>(t2);
+        if(t22)
+        {
+            return this->value < t22->value;
         }
         return false;
     }
@@ -84,6 +110,15 @@ struct String : public Atom
         }
         return false;
     }
+    bool lt(const shared_ptr<Term> &t2)
+    {
+        shared_ptr<String> t22 = dynamic_pointer_cast<String>(t2);
+        if(t22)
+        {
+            return this->value < t22->value;
+        }
+        return false;
+    }
 };
 
 struct Id : public Term
@@ -95,9 +130,10 @@ struct Id : public Term
 
 struct Var : public Term
 {
-    QString name;
-    Var(QString name) : Term(TermVar), name(name) { }
-    QString toString() { return name; }
+    uint name;
+    QString toString() { return QString("v%1").arg(name); }
+    Var(uint name) : Term(TermVar), name(name) { }
+    uint var() { return name;}
 };
 
 /*
@@ -130,6 +166,12 @@ struct Compound : public Term
     shared_ptr<Atom> functor;
     QVector<shared_ptr<Term> > args;
     Compound() : Term(TermCompund) { }
+    Compound(shared_ptr<Atom> functor) :
+        Term(TermCompund),
+        functor(functor)
+    {
+
+    }
     QString toString()
     {
         if(functor->toString() == "nil")
@@ -190,11 +232,15 @@ struct Compound : public Term
     }
 };
 
-inline shared_ptr<Term> makeInt(int i) { return shared_ptr<Int>(new Int(i)); }
-inline shared_ptr<Term> makeSymbol(QString i) { return shared_ptr<Symbol>(new Symbol(i)); }
-inline shared_ptr<Term> makeVar(QString i) { return shared_ptr<Var>(new Var(i)); }
-inline shared_ptr<Term> makeId(QString i) { return shared_ptr<Id>(new Id(i)); }
-inline shared_ptr<Term> makeString(QString i) { return shared_ptr<String>(new String(i)); }
+inline shared_ptr<Int> makeInt(int i) { return make_shared<Int>(i); }
+inline shared_ptr<Symbol> makeSymbol(QString i) { return make_shared<Symbol>(i); }
+inline shared_ptr<Var> makeVar(int i) { return make_shared<Var>(i); }
+inline shared_ptr<Id> makeId(QString i) { return make_shared<Id>(i); }
+inline shared_ptr<String> makeString(QString i) { return make_shared<String>(i); }
+inline shared_ptr<Compound> makeCompound(QString i)
+{
+   return make_shared<Compound>(makeSymbol(i));
+}
 
 }
 #endif // TERMS_H
