@@ -21,7 +21,7 @@ shared_ptr<ParseResult> ByLexeme::match(TokenBuffer &buffer)
     if(lexeme == t->Lexeme)
     {
         buffer.read();
-        return success(shared_ptr<Ast>(new TokenAst(t)));
+        return success(make_shared<TokenAst>(t));
     }
     buffer.restoreState(s);
     return expected(buffer.GetPos(), lexeme, buffer.readAhead()->toString());

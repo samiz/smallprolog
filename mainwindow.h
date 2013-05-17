@@ -20,7 +20,7 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
     
-    void parsePrologCode(Prolog::Program &proggy);
+    bool parsePrologCode(Prolog::Program &proggy);
     void parseWam(QString source, QVector<shared_ptr<SExpression> >&sexps, bool verbose=true);
     void runWam(QVector<shared_ptr<SExpression> > &sexps);
 private slots:

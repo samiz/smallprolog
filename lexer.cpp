@@ -10,7 +10,7 @@ shared_ptr<Token> Lexer::accept(TokenType type)
     p = buffer.GetPos();
     QString lexeme = buffer.accept();
 
-    shared_ptr<Token> ret(new Token(lexeme, type, p, l, c));
+    shared_ptr<Token> ret = make_shared<Token>(lexeme, type, p, l, c);
     return ret;
 }
 

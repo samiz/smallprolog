@@ -132,12 +132,33 @@ struct Compound : public Term
     Compound() : Term(TermCompund) { }
     QString toString()
     {
+        if(functor->toString() == "nil")
+        {
+            return "[]";
+        }
+        else if(functor->toString() == "pair")
+        {
+            return formatList();
+        }
         QStringList lst;
         for(int i=0; i<args.count(); ++i)
         {
             lst.append(args[i]->toString());
         }
         return QString("%1(%2)").arg(functor->toString()).arg(lst.join(", "));
+    }
+    QString formatList()
+    {
+        QStringList ret;
+        ret.append(args[0]->toString());
+
+        shared_ptr<Compound> c = dynamic_pointer_cast<Compound>(args[1]);
+        while(c && c->functor->toString() == "pair")
+        {
+            ret.append(c->args[0]->toString());
+            c = dynamic_pointer_cast<Compound>(c->args[1]);
+        }
+        return QString("[%1]").arg(ret.join(", "));
     }
 
     bool ground()

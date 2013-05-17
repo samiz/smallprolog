@@ -1,0 +1,35 @@
+-domains-
+
+-facts-
+parent(symbol, symbol)
+
+-predicates-
+ancestor(symbol, symbol)
+
+-clauses-
+ancestor(A,B):-parent(A,B).
+ancestor(A,B):-parent(A,C), ancestor(C,B).
+
+________________________________________________
+
+(domains
+    )
+
+(facts
+    (parent symbol symbol))
+
+(predicates
+    (ancestor symbol symbol))
+
+(clauses
+    (: (ancestor A B)
+        (parent A B))
+
+    (: (ancestor A B)
+        (parent A C)
+        (parent C B)))
+
+
+
+
+

@@ -215,12 +215,18 @@ shared_ptr<Term::Term> PrologParser::simpleTerm()
     }
 }
 
+bool PrologParser::LA_first_term()
+{
+    return LA(Prolog::Symbol) || LA(Prolog::Num) || LA(Prolog::Variable)
+            || LA(Prolog::LBracket);
+}
+
 shared_ptr<Term::Compound> PrologParser::compound()
 {
     shared_ptr<Term::Symbol> functor(new Term::Symbol(chomp()->Lexeme));
     QVector<shared_ptr<Term::Term> > elements;
     match(Prolog::LParen);
-    if(LA(Prolog::Symbol) || LA(Prolog::Num) || LA(Prolog::Variable))
+    if(LA_first_term())
     {
         elements.append(term());
         while(LA(Prolog::Comma))

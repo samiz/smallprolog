@@ -51,15 +51,16 @@ void MainWindow::runWam(QVector<shared_ptr<SExpression> > &sexps)
     }
 }
 
-void MainWindow::parsePrologCode(Prolog::Program &proggy)
+bool MainWindow::parsePrologCode(Prolog::Program &proggy)
 {
+    bool success = true;
     QString source = ui->txtCode->toPlainText();
     Prolog::PrologLexer lexer;
     lexer.lexer.init(source);
     lexer.lexer.skipTokens.insert(Prolog::Spacing);
     lexer.lexer.tokenize();
     ui->txtMessages->clear();
-    for(int i=0; i<SExp.lexer.acceptedTokens.count(); ++i)
+    for(int i=0; i<lexer.lexer.acceptedTokens.count(); ++i)
     {
         shared_ptr<Token> tok = lexer.lexer.acceptedTokens[i];
         ui->txtMessages->append(tok->toString());
@@ -68,6 +69,7 @@ void MainWindow::parsePrologCode(Prolog::Program &proggy)
     if(lexer.lexer.errors.count() > 0)
     {
         ui->txtMessages->append("______________________");
+        success = false;
     }
     for(int i=0; i<lexer.lexer.errors.count(); ++i)
     {
@@ -86,6 +88,7 @@ void MainWindow::parsePrologCode(Prolog::Program &proggy)
     if(parser.errors.count() > 0)
     {
         ui->txtMessages->append("______________________");
+        success = false;
     }
     for(int i=0; i<parser.errors.count(); ++i)
     {
@@ -99,6 +102,7 @@ void MainWindow::parsePrologCode(Prolog::Program &proggy)
             ui->txtMessages->append((*j)->toString());
         }
     }
+    return success;
 }
 
 void MainWindow::on_actionParse_prolog_triggered()
@@ -111,6 +115,7 @@ void MainWindow::on_actionCompile_Prolog_triggered()
 {
     Prolog::Program proggy;
     parsePrologCode(proggy);
+
     Prolog::PrologCompiler comp(proggy);
     comp.compile();
     ui->txtMessages->append(comp.getOutput());
@@ -170,8 +175,11 @@ void MainWindow::on_actionParse_WAM_triggered()
 
 void MainWindow::on_actionRun_Prolog_triggered()
 {
+    bool success;
     Prolog::Program proggy;
-    parsePrologCode(proggy);
+    success = parsePrologCode(proggy);
+    if(!success)
+        return;
     Prolog::PrologCompiler comp(proggy);
     comp.compile();
     QString wam = comp.getOutput();

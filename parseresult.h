@@ -42,7 +42,7 @@ struct ExpectedOneOf: public ParseResult
     QString found;
     ExpectedOneOf(int lastPos, QString found):ParseResult(lastPos), found(found) { }
     bool success() { return false;}
-    QString toString() { return QString("Expected one of:(%1), found").arg(what.join(", ")).arg(found);}
+    QString toString() { return QString("Expected one of:(%1), %2 found").arg(what.join(", ")).arg(found);}
     QString toPartialString() { return QString("%1").arg(what.join(", "));}
 };
 

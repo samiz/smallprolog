@@ -44,7 +44,7 @@ struct ExpectedOneOf: public LexerError
     QString found;
     ExpectedOneOf(int lastPos, QString found):LexerError(lastPos), found(found) { }
     bool success() { return false;}
-    QString toString() { return QString("Expected one of:(%1), found").arg(what.join(", ")).arg(found);}
+    QString toString() { return QString("Expected one of:(%1), %2 found").arg(what.join(", ")).arg(found);}
     QString toPartialString() { return QString("%1").arg(what.join(", "));}
 };
 

@@ -235,46 +235,43 @@ void Wam::fail()
         done = true;
 }
 
-bool Wam::ground(shared_ptr<Term::Term> t)
+bool Wam::ground(shared_ptr<Term::Term> const &t, shared_ptr<Term::Term> &ret)
 {
-    return t->ground();
-}
-
-bool Wam::bound(shared_ptr<Term::Term> v,
-                shared_ptr<Term::Term> &ret,
-                int &bindIndex)
-{
-    if(atomic(v->tag))
+    if(t->ground())
     {
-        ret = dynamic_pointer_cast<Term::Atom>(v);
+        ret = t;
         return true;
     }
-    if(v->ground())
+    else if(t->tag == Term::TermVar)
     {
-        ret = v;
-        return true;
-    }
-
-    if(v->tag == Term::TermVar)
-    {
-        shared_ptr<Term::Var> vv= dynamic_pointer_cast<Term::Var>(v);
-        shared_ptr<Term::Term> val;
-        bool s = lookup(vv->toString(), val, bindIndex);
-        if(!s)
+        int i;
+        shared_ptr<Term::Term> r;
+        bool b = lookup(t->toString(), r, i);
+        if(!b)
             return false;
-        else
+        if(r->tag==Term::TermVar)
+            return false;
+        return ground(r,ret);
+    }
+    if(t->tag == Term::TermCompund)
+    {
+        shared_ptr<Term::Compound> t1 = dynamic_pointer_cast<Term::Compound>(t);
+        shared_ptr<Term::Compound> t2 = shared_ptr<Term::Compound>(new Term::Compound());
+        t2->functor = t1->functor;
+        shared_ptr<Term::Term> arg;
+        for(int i=0; i<t1->args.count();++i)
         {
-            if(ground(val))
-            {
-                ret = val;
-                return true;
-            }
-            return false;
+            if(!ground(t1->args[i], arg))
+                return false;
+            t2->args.append(arg);
         }
+
+        ret = t2;
+        return true;
     }
 }
 
-void Wam::bind(QString var, shared_ptr<Term::Term> val)
+void Wam::bind(QString var, shared_ptr<Term::Term> const &val)
 {
     qDebug() << "Unify: binding " << var << " and "
          << val->toString() << endl;
@@ -322,8 +319,8 @@ bool Wam::unify(shared_ptr<Term::Term> t1, shared_ptr<Term::Term> t2)
         lookup(t2->toString(), t2, t2Bind);
     }
 
-    bool t1Ground = ground(t1);
-    bool t2Ground = ground(t2);
+    bool t1Ground = t1->ground();
+    bool t2Ground = t2->ground();
 
     //const bool t1Free = !t1Ground, t2Free = !t2Ground;
     const bool t1Var= t1->tag==Term::TermVar,
@@ -419,12 +416,11 @@ QMap<QString, shared_ptr<Term::Term> > Wam::resolveAll
     for(auto i=env.begin(); i!=env.end(); ++i)
     {
         shared_ptr<Term::Term> t = i.value();
-        int t2Index;
         shared_ptr<Term::Term> t2;
         if(t->tag == Term::TermVar)
         {
             shared_ptr<Term::Var> vt = dynamic_pointer_cast<Term::Var>(t);
-            if(!bound(vt, t2, t2Index))
+            if(!ground(vt, t2))
             {
                 qDebug() << "Free variable " << t->toString() << " on goal succcess";
                 continue;

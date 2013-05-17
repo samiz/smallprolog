@@ -24,6 +24,8 @@ public:
     shared_ptr<Term::Term> term();
     shared_ptr<Term::Term> simpleTerm();
     shared_ptr<Term::Compound> compound();
+
+    bool LA_first_term();
 };
 }
 #endif // PROLOGPARSER_H

@@ -92,13 +92,20 @@ void PrologCompiler::generateExpression(shared_ptr<Term::Term> targ, QSet<QStrin
 {
     if(targ->tag == Term::TermId)
     {
-        if(!vars.contains(targ->toString()))
+        if(targ->toString()=="_")
         {
             g.gen("(newv)");
-            g.gen("(popl %1)", targ->toString());
-            vars.insert(targ->toString());
         }
-        g.gen("(pushl %1)", targ->toString());
+        else
+        {
+            if(!vars.contains(targ->toString()))
+            {
+                g.gen("(newv)");
+                g.gen("(popl %1)", targ->toString());
+                vars.insert(targ->toString());
+            }
+            g.gen("(pushl %1)", targ->toString());
+        }
     }
     else if(atomic(targ->tag))
     {

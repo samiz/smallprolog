@@ -92,14 +92,12 @@ public:
 private:
     void processInstruction(shared_ptr<SExpression> inst, shared_ptr<Method> method, int &count);
     void backtrack();
-    bool bound(shared_ptr<Term::Term> v, shared_ptr<Term::Term> &ret, int &bindIndex);
-    void bind(QString, shared_ptr<Term::Term> val);
+    void bind(QString, const shared_ptr<Term::Term> &val);
     bool unifyCompound(shared_ptr<Term::Term> t1, shared_ptr<Term::Term> t2);
     bool unify(shared_ptr<Term::Term> t1, shared_ptr<Term::Term> t2);
-    //bool cellValue(shared_ptr<Term::Cell> c, shared_ptr<Term::Term> &ret);
     bool lookup(QString, shared_ptr<Term::Term> &ret, int &bindIndex);
     QString dumpTrail();
-    bool ground(shared_ptr<Term::Term> t);
+    bool ground(const shared_ptr<Term::Term> &t, shared_ptr<Term::Term> &ret);
     void fail();
     QMap<QString, shared_ptr<Term::Term> > resolveAll
     (QMap<QString, shared_ptr<Term::Term> >env);
