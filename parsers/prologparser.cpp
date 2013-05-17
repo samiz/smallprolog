@@ -1,5 +1,5 @@
 #include "prologparser.h"
-#include "prologlexer.h"
+#include "../lexers/prologlexer.h"
 
 namespace Prolog
 {

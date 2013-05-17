@@ -7,7 +7,7 @@
 #include <QString>
 #include <QVector>
 #include "parser.h"
-#include "buffer.h"
+#include "../lexers/buffer.h"
 #include "parseresult.h"
 
 using namespace std;

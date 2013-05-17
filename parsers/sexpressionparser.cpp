@@ -1,5 +1,5 @@
 #include "sexpressionparser.h"
-#include "sexpressionlexer.h"
+#include "../lexers/sexpressionlexer.h"
 
 SExpressionParser::SExpressionParser(QVector<shared_ptr<Token> > &tokens)
     : BaseParser(tokens)

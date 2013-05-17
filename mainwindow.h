@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 
-#include "sexpressionlexer.h"
+#include "./lexers/sexpressionlexer.h"
 #include "sexpression.h"
 #include "program.h"
 namespace Ui {

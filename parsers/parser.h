@@ -2,8 +2,8 @@
 #define PARSER_H
 
 #include <memory>
-#include "token.h"
-#include "buffer.h"
+#include "../lexers/token.h"
+#include "../lexers/buffer.h"
 
 shared_ptr<Token> tokenAt(QVector<shared_ptr<Token> >&v, int i);
 

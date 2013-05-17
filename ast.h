@@ -7,7 +7,7 @@
 #include <memory>
 using namespace std;
 
-#include "token.h"
+#include "./lexers/token.h"
 
 struct Ast
 {

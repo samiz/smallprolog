@@ -23,7 +23,7 @@ SOURCES += main.cpp\
     lexers/strbuffer.cpp \
     lexers/linetracker.cpp \
     sexpression.cpp \
-    sexpressionparser.cpp \
+    parsers/sexpressionparser.cpp \
     program.cpp \
     wam.cpp \
     terms.cpp \

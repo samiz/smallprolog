@@ -1,10 +1,10 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include "sexpressionparser.h"
+#include "./parsers/sexpressionparser.h"
 #include "wam.h"
-#include "prologlexer.h"
-#include "prologparser.h"
+#include "./lexers/prologlexer.h"
+#include "./parsers/prologparser.h"
 #include "prologcompiler.h"
 #include "builtins.h"
 
