@@ -2,7 +2,7 @@
 #define PROLOGPARSER_H
 
 #include "parser.h"
-#include "program.h"
+#include "../data/program.h"
 
 namespace Prolog
 {

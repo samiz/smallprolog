@@ -2,11 +2,11 @@
 #include "ui_mainwindow.h"
 
 #include "./parsers/sexpressionparser.h"
-#include "wam.h"
 #include "./lexers/prologlexer.h"
 #include "./parsers/prologparser.h"
-#include "prologcompiler.h"
-#include "builtins.h"
+#include "./compiler/prologcompiler.h"
+#include "./wam/wam.h"
+#include "./wam/builtins.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),

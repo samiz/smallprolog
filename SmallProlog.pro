@@ -22,20 +22,20 @@ SOURCES += main.cpp\
     lexers/lexererror.cpp \
     lexers/strbuffer.cpp \
     lexers/linetracker.cpp \
-    sexpression.cpp \
+    data/sexpression.cpp \
     parsers/sexpressionparser.cpp \
-    program.cpp \
-    wam.cpp \
-    terms.cpp \
+    data/program.cpp \
+    wam/wam.cpp \
+    data/terms.cpp \
     lexers/prologlexer.cpp \
     parsers/parser.cpp \
     parsers/prologparser.cpp \
-    ast.cpp \
+    data/ast.cpp \
     parsers/parsecombinators.cpp \
     parsers/parseresult.cpp \
-    prologcompiler.cpp \
-    codegenhelper.cpp \
-    builtins.cpp
+    compiler/prologcompiler.cpp \
+    compiler/codegenhelper.cpp \
+    wam/builtins.cpp
 
 HEADERS  += mainwindow.h \
     lexers/lexer.h \
@@ -46,20 +46,20 @@ HEADERS  += mainwindow.h \
     lexers/lexererror.h \
     lexers/strbuffer.h \
     lexers/linetracker.h \
-    sexpression.h \
-    sexpressionparser.h \
-    program.h \
-    wam.h \
-    terms.h \
+    data/sexpression.h \
+    parsers/sexpressionparser.h \
+    data/program.h \
+    wam/wam.h \
+    data/terms.h \
     lexers/prologlexer.h \
     parsers/parser.h \
     parsers/prologparser.h \
-    ast.h \
+    data/ast.h \
     parsers/parsecombinators.h \
     parsers/parseresult.h \
-    prologcompiler.h \
-    codegenhelper.h \
-    builtins.h
+    compiler/prologcompiler.h \
+    compiler/codegenhelper.h \
+    wam/builtins.h
 
 FORMS    += mainwindow.ui
 

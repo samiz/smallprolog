@@ -2,7 +2,7 @@
 #define PROLOGCOMPILER_H
 
 #include <QStringList>
-#include "program.h"
+#include "../data/program.h"
 #include "codegenhelper.h"
 
 namespace Prolog

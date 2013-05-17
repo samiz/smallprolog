@@ -4,8 +4,8 @@
 #include <QMainWindow>
 
 #include "./lexers/sexpressionlexer.h"
-#include "sexpression.h"
-#include "program.h"
+#include "./data/sexpression.h"
+#include "./data/program.h"
 namespace Ui {
 class MainWindow;
 }

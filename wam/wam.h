@@ -5,8 +5,8 @@
 #include <QStack>
 #include <QMap>
 #include <functional>
-#include "sexpression.h"
-#include "terms.h"
+#include "../data/sexpression.h"
+#include "../data/terms.h"
 
 using namespace std;
 enum OpCode

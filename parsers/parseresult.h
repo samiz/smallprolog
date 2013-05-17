@@ -1,7 +1,7 @@
 #ifndef PARSERESULT_H
 #define PARSERESULT_H
 
-#include "ast.h"
+#include "../data/ast.h"
 namespace Parser
 {
 struct ParseResult
