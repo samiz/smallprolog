@@ -67,6 +67,8 @@ void MainWindow::runWam(QVector<shared_ptr<SExpression> > &sexps)
     wam.RegisterExternal("<=", Prolog::le);
     wam.RegisterExternal("<>", Prolog::ne);
 
+    wam.RegisterExternal("assert", Prolog::assert);
+
     wam.Init();
     long a,b;
     a = get_time();
@@ -119,6 +121,8 @@ bool MainWindow::parsePrologCode(Prolog::Program &proggy)
     proggy.externalMethods.insert("<=");
     proggy.externalMethods.insert(">=");
     proggy.externalMethods.insert("<>");
+    proggy.externalMethods.insert("assert");
+
 
     proggy.addStruct("pair", 2);
     proggy.addStruct("nil", 0);
@@ -164,6 +168,7 @@ void MainWindow::on_actionCompile_Prolog_triggered()
 
     Prolog::PrologCompiler comp(proggy);
     comp.compile();
+    ui->txtMessages->append(comp.errors.join("\n"));
     ui->txtMessages->append(comp.getOutput());
 }
 
@@ -229,6 +234,7 @@ void MainWindow::on_actionRun_Prolog_triggered()
     Prolog::PrologCompiler comp(proggy);
 
     comp.compile();
+    ui->txtMessages->append(comp.errors.join("\n"));
     QString wam = comp.getOutput();
     QVector<shared_ptr<SExpression> > sexps;
     parseWam(wam, sexps, false);

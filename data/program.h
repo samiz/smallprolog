@@ -33,6 +33,13 @@ struct Clause
     QString toString();
 };
 
+struct Fact
+{
+    QString name;
+    QStringList argTypes;
+    Fact(QString name):name(name){ }
+};
+
 class Program
 {
 public:
@@ -40,6 +47,7 @@ public:
     QMap<QString, int> structContructors;
     QMap<QString, shared_ptr<Predicate> > predicates;
     QMap<QString, QVector<shared_ptr<Clause> > > clauses;
+    QMap<QString, shared_ptr<Fact> > facts;
     QSet<QString> externalMethods;
 public:
     shared_ptr<Domain> addDomain(QString name)
@@ -48,6 +56,14 @@ public:
         domains[name] = d;
         return d;
     }
+
+    shared_ptr<Fact> addFact(QString name)
+    {
+        shared_ptr<Fact> f = make_shared<Fact>(name);
+        facts[name] = f;
+        return f;
+    }
+
     void addStruct(QString name, int arity)
     {
         structContructors[name] = arity;

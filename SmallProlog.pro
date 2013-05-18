@@ -37,7 +37,8 @@ SOURCES += main.cpp\
     compiler/codegenhelper.cpp \
     wam/builtins.cpp \
     wam/stack.cpp \
-    wam/binding.cpp
+    wam/binding.cpp \
+    dbhelper.cpp
 
 HEADERS  += mainwindow.h \
     lexers/lexer.h \
@@ -64,8 +65,9 @@ HEADERS  += mainwindow.h \
     wam/builtins.h \
     wam/stack.h \
     wam/operandstack.h \
-    wam/binding.h
+    wam/binding.h \
+    dbhelper.h
 
 FORMS    += mainwindow.ui
-
+QT += sql
 OTHER_FILES += \

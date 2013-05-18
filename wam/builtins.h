@@ -17,5 +17,7 @@ void le(Wam &vm);
 void ge(Wam &vm);
 void ne(Wam &vm);
 
+void assert(Wam &vm);
+
 }
 #endif // BUILTINS_H

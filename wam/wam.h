@@ -6,6 +6,7 @@
 #include <QMap>
 #include <functional>
 #include "../data/sexpression.h"
+#include "../dbhelper.h"
 #include "operandstack.h"
 
 using namespace std;
@@ -19,6 +20,8 @@ enum OpCode
     Unify,
     Call,
     CallEx,
+    DbQuery,
+    DbCheck,
     TryMeElse,
     Proceed
 };
@@ -63,17 +66,21 @@ void nothingFunction(Wam &);
 
 class Wam
 {
-
     int newVarCount;
 public:
     QStringList errors;
     QVector<QMap<QString, shared_ptr<Term::Term> > > solutions;
+    DBHelper dbHelper;
     bool result;
     bool done;
 public:
     QMap<QString, int> structArities;
+    QMap<QString, int> factArities;
+    QMap<QString, QVector<Term::Tag> > factArgTypes;
+    QMap<QString, shared_ptr<Prolog::Fact> > facts;
     QStack<Frame> callStack;
-    OperandStack operandStack;
+    //OperandStack operandStack;
+    QStack<shared_ptr<Term::Term> > operandStack;
     TrailStack trail;
     QStack<ChoicePoint> choicePoints;
     QMap<QString, shared_ptr<Method> > predicates;
@@ -83,10 +90,14 @@ public:
 public:
     void Load(const QVector<shared_ptr<SExpression> > &code);
     void Init();
+    void Finished();
     void Run(QString main);
     void RegisterExternal(QString name, function<void(Wam &)> f);
+    void query(QString tableName);
+    shared_ptr<Term::Term> resultToTerm(int i, QSqlQuery &q, Term::Tag type);
     void error(QString s);
 public:
+    Term::Tag termTypeOf(QString name);
     void processInstruction(shared_ptr<SExpression> inst, const shared_ptr<Method> &method, int &count);
     void backtrack();
     void bind(uint, const shared_ptr<Term::Term> &val);

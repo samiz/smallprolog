@@ -8,10 +8,44 @@ void PrologCompiler::compile()
     {
         g.gen("(struct %1 %2)", i.key(), i.value());
     }
+    for(auto i=program.facts.begin(); i!=program.facts.end();++i)
+    {
+        compileFact(i.value());
+    }
     for(auto i=program.clauses.begin(); i!=program.clauses.end();++i)
     {
         compileClause(i.value());
     }
+}
+
+void PrologCompiler::compileFact(shared_ptr<Fact> const &fact)
+{
+    /*
+     How a compiled fact looks like:
+     (struct parent 2)
+     (fact parent symbol symbol)
+     (predicate parent
+        (dbquery parent)
+        (label q (dbcheck parent))
+        (proceed)
+     )
+
+     dbquery: uses N arguments on the operand stack to query the database for the given table name
+              it then leaves on the stack a 'query' object representing the returned value
+              (N of course is the number of columns in the table)
+
+     dbcheck: if the query has zero remaining results, fails and pops N+1 items from
+                  the operand stack (the args and the query object)
+
+              if the query has at least one remaining result, does this:
+                put a choice point (in case there are future results) using the q label
+                attempt to unify the values on the stack with the query result
+     */
+    g.gen("(fact %1 %2)", fact->name, fact->argTypes.join(" "));
+    g.gen("(predicate %1", fact->name);
+    g.gen("(dbquery %1)", fact->name);
+    g.gen("(label q (dbcheck %1))", fact->name);
+    g.gen("(proceed))");
 }
 
 void PrologCompiler::compileClause(QVector<shared_ptr<Clause> > &clauseBodies)
@@ -68,6 +102,11 @@ void PrologCompiler::compileClause(QVector<shared_ptr<Clause> > &clauseBodies)
                     generateExpression(tc->args[1], vars);
                     g.gen("(unify)");
 
+                }
+                else if(tc->functor->toString() == "assert")
+                {
+                    generateExpression(tc->args[0], vars);
+                    g.gen(("(callex assert)"));
                 }
                 else
                 {

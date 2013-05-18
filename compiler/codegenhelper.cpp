@@ -61,6 +61,11 @@ void CodeGenerator::gen(QString str, QString arg)
     genFmt(str, arg);
 }
 
+void CodeGenerator::gen(QString str, QString arg, QString arg2)
+{
+    gen(QString(str).arg(arg).arg(arg2));
+}
+
 void CodeGenerator::gen(QString str, QString arg, int i)
 {
     gen(QString(str).arg(arg).arg(i));

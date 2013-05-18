@@ -5,6 +5,7 @@
 #include <QStringList>
 #include <QVector>
 #include <QDebug>
+#include <QSqlQuery>
 using namespace std;
 
 namespace Term
@@ -16,7 +17,8 @@ enum Tag
     TermStr,
     TermId,
     TermVar,
-    TermCompund
+    TermCompund,
+    TermQuery
 };
 
 
@@ -136,6 +138,13 @@ struct Var : public Term
     uint var() { return name;}
 };
 
+struct DbQuery : public Term
+{
+    QSqlQuery q;
+    DbQuery(QSqlQuery q) : Term(TermQuery),q(q) { }
+    QString toString() { return "<sql query>"; }
+};
+
 /*
 struct Cell : public Term
 {
@@ -237,6 +246,7 @@ inline shared_ptr<Symbol> makeSymbol(QString i) { return make_shared<Symbol>(i);
 inline shared_ptr<Var> makeVar(int i) { return make_shared<Var>(i); }
 inline shared_ptr<Id> makeId(QString i) { return make_shared<Id>(i); }
 inline shared_ptr<String> makeString(QString i) { return make_shared<String>(i); }
+inline shared_ptr<DbQuery> makeQuery(QSqlQuery q) { return make_shared<DbQuery>(q); }
 inline shared_ptr<Compound> makeCompound(QString i)
 {
    return make_shared<Compound>(makeSymbol(i));

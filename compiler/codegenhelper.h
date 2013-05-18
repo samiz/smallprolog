@@ -33,6 +33,7 @@ public:
     void gen(QString str, int i);
     void gen(QString str, double d);
     void gen(QString str, QString arg);
+    void gen(QString str, QString arg, QString arg2);
     void gen(QString str, QString arg, int i);
     void genFmt(QString fmtStr);
     void genFmt(QString fmtStr, QString str);

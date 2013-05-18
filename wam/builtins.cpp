@@ -216,6 +216,21 @@ void ne(Wam &vm)
     }
 }
 
+void assert(Wam &vm)
+{
+    shared_ptr<Term::Term> a;
+    if(!PopGround(vm,"assert",1, a))
+    {
+        return;
+    }
+    if(a->tag != Term::TermCompund)
+    {
+        vm.error(QString("assert: expected compound value, given %1").arg(a->toString()));
+        return;
+    }
+    vm.dbHelper.assert(dynamic_pointer_cast<Term::Compound>(a));
+}
+
 
 
 }

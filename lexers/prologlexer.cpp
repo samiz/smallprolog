@@ -26,6 +26,7 @@ PrologLexer::PrologLexer()
     lexer.rules[Prolog::DomainsKw] = str("domains");
     lexer.rules[Prolog::PredicatesKw] = str("predicates");
     lexer.rules[Prolog::ClausesKw] = str("clauses");
+    lexer.rules[Prolog::AssertKw] = str("assert");
 
     lexer.rules[Prolog::Str] = seq(str("\""),
                                  loop(anyBut(choice(str("\""), str("\n")))),
@@ -39,14 +40,15 @@ PrologLexer::PrologLexer()
     shared_ptr<RegExp> symbol = charOf("+-/*<>=");
     shared_ptr<RegExp> digits = seq(loop1(digit), checkNo(letter));
     shared_ptr<RegExp> smallLetterOrSymbol = choice(smallLetter, symbol);
-    shared_ptr<RegExp> alphaOrSymbol = choice(alpha, symbol);
+    shared_ptr<RegExp> alphaOrUnderscore = choice(alpha, str("_"));
+    shared_ptr<RegExp> alphaOrSymbol= choice(alpha, symbol);
 
     lexer.rules[Prolog::Num] = seq(digits,
                                  optional(seq(str("."), digits)));
 
     lexer.rules[Prolog::Symbol] = seq(smallLetterOrSymbol, loop(choice(digit, alphaOrSymbol)));
     lexer.rules[Prolog::Variable] = seq(choice(capitalLetter, str("_")),
-                                        loop(choice(digit, alphaOrSymbol)));
+                                        loop(choice(digit, alphaOrUnderscore)));
 
 }
 
@@ -77,7 +79,7 @@ PrologLexer::PrologLexer()
         case DomainsKw: return "domains";
         case PredicatesKw: return "predicates";
         case ClausesKw: return "clauses";
-
+        case AssertKw: return "assert";
         }
         return "<unknown>";
     }

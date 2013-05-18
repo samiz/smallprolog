@@ -7,7 +7,7 @@ void Wam::Load(QVector<shared_ptr<SExpression> > const &code)
     {
         const shared_ptr<SExpression> &expr = *i;
         shared_ptr<List> rest;
-        QString predName, structName;
+        QString predName, factName, structName;
         int arity;
         if(expr->match("predicate", predName, rest))
         {
@@ -28,10 +28,36 @@ void Wam::Load(QVector<shared_ptr<SExpression> > const &code)
         {
             structArities[structName] = arity;
         }
+        else if(expr->match("fact", factName, rest))
+        {
+            shared_ptr<Prolog::Fact> fact = make_shared<Prolog::Fact>(factName);
+            factArities[factName] = arity;
+            factArgTypes[factName] = QVector<Term::Tag>();
+            rest->forEach([this, &factName, &fact](shared_ptr<SExpression> tt){
+                this->factArgTypes[factName].append(termTypeOf(tt->toString()));
+                fact->argTypes.append(tt->toString());
+            });
+            facts[factName] = fact;
+        }
         else
         {
             errors.append(QString("Invalid format: %1").arg(expr->toString()));
         }
+    }
+}
+
+Term::Tag Wam::termTypeOf(QString name)
+{
+    if(name=="symbol")
+        return Term::TermSymbol;
+    else if(name=="int")
+        return Term::TermInt;
+    else if(name=="string")
+        return Term::TermStr;
+    else
+    {
+        error(QString("termTypeOf: unhandled term type %1").arg(name));
+        return Term::TermInt;
     }
 }
 
@@ -48,7 +74,7 @@ void Wam::processInstruction(shared_ptr<SExpression> inst, shared_ptr<Method> co
         // without increasing 'count'
         if(p)
         {
-            processInstruction(tail, method, count);
+            processInstruction(p->head, method, count);
         }
         else
         {
@@ -96,6 +122,14 @@ void Wam::processInstruction(shared_ptr<SExpression> inst, shared_ptr<Method> co
     {
         method->Instructions.append(Instruction(CallEx, Term::makeSymbol(sval)));
     }
+    else if(inst->match("dbquery", sval))
+    {
+        method->Instructions.append(Instruction(DbQuery, Term::makeSymbol(sval)));
+    }
+    else if(inst->match("dbcheck", sval))
+    {
+        method->Instructions.append(Instruction(DbCheck, Term::makeSymbol(sval)));
+    }
     else if(inst->match("try_me_else", sval))
     {
         method->Instructions.append(Instruction(TryMeElse, Term::makeSymbol(sval)));
@@ -120,6 +154,61 @@ void Wam::RegisterExternal(QString name, function<void(Wam &)> f)
     externalMethods[name] = f;
 }
 
+void Wam::query(QString tableName)
+{
+    if(!factArities.contains(tableName))
+    {
+        error(QString("Querying unknown fact: %1").arg(tableName));
+        return;
+    }
+    int arity = factArities[tableName];
+    QStringList wheres;
+    int n = operandStack.count()-1;
+    for(int i=0; i<arity; ++i)
+    {
+        shared_ptr<Term::Term> arg = operandStack[n-i];
+        shared_ptr<Term::Term> groundArg = operandStack[n-i];
+        if(ground(arg, groundArg))
+        {
+            wheres.append(QString("c%1=?").arg(i));
+        }
+    }
+    QString whereClause=n?wheres.join(" AND "):"";
+    QString query = QString("SELECT * FROM %1 %2")
+            .arg(tableName)
+            .arg(whereClause);
+    QSqlQuery q;
+
+    if(!dbHelper.find(query, q))
+    {
+        error(QString("Failed to execute query: %1").arg(query));
+        return;
+    }
+    operandStack.push(Term::makeQuery(q));
+}
+
+shared_ptr<Term::Term> Wam::resultToTerm(int i, QSqlQuery &q, Term::Tag type)
+{
+    if(type==Term::TermInt)
+    {
+        return Term::makeInt(q.value(i).toInt());
+    }
+    else if(type==Term::TermStr)
+    {
+        return Term::makeString(q.value(i).toString());
+    }
+    else if(type==Term::TermSymbol)
+    {
+        return Term::makeSymbol(q.value(i).toString());
+    }
+    else
+    {
+        error(QString("resultToTerm: unhandled term type %1").arg(type));
+        return shared_ptr<Term::Term>();
+    }
+}
+
+
 void Wam::error(QString s)
 {
     errors.append(s);
@@ -133,6 +222,13 @@ void Wam::Init()
     choicePoints.clear();
     solutions.clear();
     operandStack.clear();
+    dbHelper.open();
+    dbHelper.createTables(facts);
+}
+
+void Wam::Finished()
+{
+    dbHelper.close();
 }
 
 void Wam::Run(QString main)
@@ -218,6 +314,53 @@ void Wam::Run(QString main)
             f(*this);
         }
             break;
+        case DbQuery:
+            query(i.arg->toString());
+            break;
+        case DbCheck:
+        {
+            shared_ptr<Term::DbQuery> tq = dynamic_pointer_cast<Term::DbQuery>(operandStack.top());
+            QString table = i.arg->toString();
+            int nfields = factArities[table];
+
+            if(!tq)
+            {
+                error("Expected query object on stack");
+            }
+            QSqlQuery &q =tq->q;
+            if(!q.next())
+            {
+                operandStack.pop(); // no more query object
+                for(int i=0; i<nfields;++i) // no more args
+                    operandStack.pop();
+                fail();
+            }
+            else
+            {
+                // First push a choice point to ourselves
+                cp = ChoicePoint();
+                cp.trailIndex = trail.count();
+                cp.frameIndex = currentFrame;
+                cp.continuation = "q";
+                choicePoints.push(cp);
+
+                // Now let's try our query
+                int n = operandStack.count() -1;
+                n--; // skip query object
+                for(int i=0; i<nfields; ++i)
+                {
+                    shared_ptr<Term::Term> t = operandStack[n-i];
+                    shared_ptr<Term::Term> t2 = resultToTerm(i, q, factArgTypes[table][i]);
+                    if(!t2)
+                    {
+                        goto DbCheckError;
+                    }
+                    unify(t, t2);
+                }
+            }
+        }
+DbCheckError:
+            break;
         case TryMeElse:
             cp = ChoicePoint();
             cp.trailIndex = trail.count();
@@ -249,6 +392,7 @@ void Wam::Run(QString main)
             break;
         }
     }
+    Finished();
 }
 
 void Wam::backtrack()
@@ -488,6 +632,8 @@ QString OpcodeToString(OpCode op)
     case Unify: return "Unify";
     case Call: return "Call";
     case CallEx: return "CallEx";
+    case DbQuery: return "DbQuery";
+    case DbCheck: return "DbCheck";
     case TryMeElse: return "TryMeElse";
     case Proceed: return "Proceed";
     }

@@ -17,6 +17,7 @@ namespace Prolog
         DomainsKw,
         PredicatesKw,
         ClausesKw,
+        AssertKw,
         Symbol,
         Variable,
         Str,

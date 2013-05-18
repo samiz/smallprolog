@@ -67,7 +67,28 @@ void PrologParser::factsSection()
 {
     if(LA("facts"))
     {
-        //todo:
+        nextToken();
+        while(LA(Prolog::Symbol))
+        {
+            shared_ptr<Token> factName = chomp();
+            shared_ptr<Fact> f = program.addFact(factName->Lexeme);
+            match(Prolog::LParen);
+            if(!LA(Prolog::RParen))
+            {
+                expect(Prolog::Symbol);
+                shared_ptr<Token> aType = chomp();
+                f->argTypes.append(aType->Lexeme);
+                while(LA(Prolog::Comma))
+                {
+                    match(Prolog::Comma);
+                    expect(Prolog::Symbol);
+                    aType = chomp();
+                    f->argTypes.append(aType->Lexeme);
+                }
+            }
+            match(Prolog::RParen);
+            program.addStruct(factName->Lexeme, f->argTypes.count());
+        }
     }
 }
 
@@ -163,6 +184,15 @@ shared_ptr<Term::Term> PrologParser::simpleTerm()
     else if(LA(Prolog::Variable))
     {
         return Term::makeId(chomp()->Lexeme);
+    }
+    else if(LA(Prolog::AssertKw))
+    {
+        nextToken();
+        shared_ptr<Term::Compound> t = Term::makeCompound("assert");
+        match(Prolog::LParen);
+        t->args.append(term());
+        match(Prolog::RParen);
+        return t;
     }
     else if(LA(Prolog::LBracket))
     {
