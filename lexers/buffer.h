@@ -5,14 +5,15 @@
 **   as described in the included license.txt file
 **************************************************************************/
 
-#ifndef BUFFER_H
-#define BUFFER_H
+#ifndef PL_BUFFER_H
+#define PL_BUFFER_H
 
-#include<QtCore>
+#include <QtCore>
 #include <functional>
 
 using namespace std;
-
+namespace Lex
+{
 template<class BufferType>
 struct BufferState
 {
@@ -217,5 +218,5 @@ class SimpleVectorBuffer : public Buffer<
 {
     typedef BufferState<SimpleVectorBuffer<T> > State;
 };
-
+}
 #endif // BUFFER_H

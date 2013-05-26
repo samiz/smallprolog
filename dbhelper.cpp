@@ -1,19 +1,23 @@
 #include "dbhelper.h"
+#include "wam/wam.h"
 
 #include <QDebug>
 #include <QtSql/QSqlError>
 #include <QStringList>
 
+namespace Wam
+{
 DBHelper::DBHelper()
 {
     _isOpen = false;
+    db = QSqlDatabase::addDatabase("QSQLITE", "pdb");
+    db.setDatabaseName(":memory:");
 }
 
 
 bool DBHelper::open()
 {
-    db = QSqlDatabase::addDatabase("QSQLITE", "pdb");
-    db.setDatabaseName(":memory:");
+
 
     if(!db.open())
     {
@@ -109,29 +113,57 @@ void DBHelper::assert(shared_ptr<Term::Compound> row)
     for(int i=0;i<row->args.count(); ++i)
     {
         shared_ptr<Term::Term> col = row->args[i];
-        if(col->tag==Term::TermInt)
-        {
-            q.bindValue(i, dynamic_pointer_cast<Term::Int>(col)->value);
-        }
-        else if(col->tag==Term::TermSymbol)
-        {
-            q.addBindValue(col->toString());
-        }
-        else if(col->tag==Term::TermStr)
-        {
-            q.bindValue(i, dynamic_pointer_cast<Term::String>(col)->value);
-        }
+        q.bindValue(i, termToQVariant(col));
     }
     exec(q, insertQueries[tableName]);
 }
 
-bool DBHelper::find(const QString &query, QSqlQuery &result)
+QVariant DBHelper::termToQVariant(const shared_ptr<Term::Term> &t)
+{
+   return t->toVariant();
+}
+
+void DBHelper::delete_(shared_ptr<Term::Compound> a, Wam &wam)
+{
+    const QString &tableName = a->functor->toString();
+    QVector<QVariant> args;
+    QStringList wheres;
+    for(int i=0; i<a->args.count(); ++i)
+    {
+        shared_ptr<Term::Term> arg = a->args[i];
+        shared_ptr<Term::Term> groundArg;
+        if(wam.ground(arg, groundArg))
+        {
+            wheres.append(QString("c%1=?").arg(i));
+            args.append(termToQVariant(groundArg));
+        }
+    }
+    QString whereClause=(args.count()!=0)?QString(" WHERE %1").arg(wheres.join(" AND ")):"";
+    QString query = QString("DELETE FROM %1%2")
+            .arg(tableName)
+            .arg(whereClause);
+    QSqlQuery q(db);
+    if(!q.prepare(query))
+    {
+        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
+        return;
+    }
+    for(int i=0;i<args.count(); ++i)
+        q.bindValue(i, args[i]);
+    exec(q, query);
+
+}
+
+bool DBHelper::find(const QString &query, QSqlQuery &result, const QVector<QVariant> &conditions)
 {
     QSqlQuery q(db);
     if(!q.prepare(query))
     {
          qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
     }
+    for(int i=0; i<conditions.count(); ++i)
+        q.bindValue(i, conditions[i]);
+
     if(exec(q, query))
     {
         result = q;
@@ -357,4 +389,5 @@ QSqlQuery DBHelper::q(QString query, QVariant arg1, QVariant arg2, QVariant arg3
         qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
     }
     return q;
+}
 }

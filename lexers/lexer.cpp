@@ -2,6 +2,8 @@
 #include "regexp.h"
 #include "lexer.h"
 
+namespace Lex
+{
 shared_ptr<Token> Lexer::accept(TokenType type)
 {
     int l, c, p;
@@ -95,4 +97,5 @@ void Lexer::tokenize()
             break; // can't recover
         }
     }
+}
 }

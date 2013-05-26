@@ -3,7 +3,7 @@
 
 #include <QStringList>
 #include "../data/program.h"
-#include "codegenhelper.h"
+#include "./codegenhelper.h"
 
 namespace Prolog
 {

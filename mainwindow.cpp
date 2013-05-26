@@ -7,6 +7,7 @@
 #include "./compiler/prologcompiler.h"
 #include "./wam/wam.h"
 #include "./wam/builtins.h"
+#include "prologengine.h"
 
 #include <sys/time.h>
 
@@ -18,6 +19,8 @@ MainWindow::MainWindow(QWidget *parent) :
     this->setCentralWidget(ui->splitter);
     this->setWindowState(Qt::WindowMaximized);
     this->setWindowTitle(QString::fromStdWString(L"小さい Prolog"));
+    PrologEngine prolog;
+    prolog.load("facts\nprocDef(string)\n");
 }
 
 MainWindow::~MainWindow()
@@ -52,7 +55,7 @@ long get_time()
 
 void MainWindow::runWam(QVector<shared_ptr<SExpression> > &sexps)
 {
-    Wam wam;
+    Wam::Wam wam;
     wam.Load(sexps);
     wam.RegisterExternal("sqrt", Prolog::sqrt);
     wam.RegisterExternal("+", Prolog::plus);
@@ -68,6 +71,7 @@ void MainWindow::runWam(QVector<shared_ptr<SExpression> > &sexps)
     wam.RegisterExternal("<>", Prolog::ne);
 
     wam.RegisterExternal("assert", Prolog::assert);
+    wam.RegisterExternal("delete", Prolog::delete_);
 
     wam.Init();
     long a,b;
@@ -122,6 +126,7 @@ bool MainWindow::parsePrologCode(Prolog::Program &proggy)
     proggy.externalMethods.insert(">=");
     proggy.externalMethods.insert("<>");
     proggy.externalMethods.insert("assert");
+    proggy.externalMethods.insert("delete");
 
 
     proggy.addStruct("pair", 2);

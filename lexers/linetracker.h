@@ -5,12 +5,13 @@
 **   as described in the included license.txt file
 **************************************************************************/
 
-#ifndef LINETRACKER_H
-#define LINETRACKER_H
+#ifndef PL_LINETRACKER_H
+#define PL_LINETRACKER_H
 
 #include <QString>
 #include <QMap>
-
+namespace Lex
+{
 class LineTracker
 {
     QMap<int, int> lineStartPositions;
@@ -28,5 +29,5 @@ public:
     int lineCount() { return lineStartPositions.count();}
     void line(int i, int &start, int &len);
 };
-
+}
 #endif // LINETRACKER_H

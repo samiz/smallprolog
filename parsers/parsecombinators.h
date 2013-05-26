@@ -8,7 +8,7 @@
 #include <QVector>
 #include "parser.h"
 #include "../lexers/buffer.h"
-#include "parseresult.h"
+#include "./parseresult.h"
 
 using namespace std;
 

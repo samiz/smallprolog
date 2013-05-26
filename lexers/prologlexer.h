@@ -1,7 +1,7 @@
 #ifndef PROLOGLEXER_H
 #define PROLOGLEXER_H
 
-#include "lexer.h"
+#include "./lexer.h"
 namespace Prolog
 {
     enum TokenType
@@ -44,7 +44,7 @@ QString tokenToString(int type);
 class PrologLexer
 {
 public:
-    Lexer lexer;
+    Lex::Lexer lexer;
 public:
     PrologLexer();
 

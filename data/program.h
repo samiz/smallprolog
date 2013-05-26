@@ -37,6 +37,7 @@ struct Fact
 {
     QString name;
     QStringList argTypes;
+    QStringList argNames;
     Fact(QString name):name(name){ }
 };
 

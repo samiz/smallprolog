@@ -9,7 +9,9 @@ QMAKE_CXXFLAGS += -std=gnu++0x -Wno-unused-parameter
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = SmallProlog
-TEMPLATE = app
+#TEMPLATE = app
+TEMPLATE = lib
+CONFIG += staticlib
 
 
 SOURCES += main.cpp\
@@ -38,7 +40,8 @@ SOURCES += main.cpp\
     wam/builtins.cpp \
     wam/stack.cpp \
     wam/binding.cpp \
-    dbhelper.cpp
+    dbhelper.cpp \
+    prologengine.cpp
 
 HEADERS  += mainwindow.h \
     lexers/lexer.h \
@@ -66,7 +69,8 @@ HEADERS  += mainwindow.h \
     wam/stack.h \
     wam/operandstack.h \
     wam/binding.h \
-    dbhelper.h
+    dbhelper.h \
+    prologengine.h
 
 FORMS    += mainwindow.ui
 QT += sql

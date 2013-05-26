@@ -1,7 +1,7 @@
 #ifndef SEXPRESSIONLEXER_H
 #define SEXPRESSIONLEXER_H
 
-#include "lexer.h"
+#include "./lexer.h"
 namespace SExp
 {
     enum TokenType
@@ -19,7 +19,7 @@ namespace SExp
 class SExpressionLexer
 {
 public:
-    Lexer lexer;
+    Lex::Lexer lexer;
 public:
     SExpressionLexer();
 

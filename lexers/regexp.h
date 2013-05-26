@@ -5,8 +5,8 @@
 #include <functional>
 #include <QString>
 #include <QVector>
-#include "lexererror.h"
-#include "strbuffer.h"
+#include "./lexererror.h"
+#include "./strbuffer.h"
 
 using namespace std;
 

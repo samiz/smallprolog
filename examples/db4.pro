@@ -5,4 +5,5 @@ clauses
 main():-
     assert(parent(samy, mohamed)),
     assert(parent(mohamed,mira)),
-    parent(X,Y).
+    delete(parent(mohamed,X)),
+    parent(A,B).

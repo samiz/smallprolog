@@ -7,7 +7,8 @@
 
 #include "linetracker.h"
 #include <QStringList>
-
+namespace Lex
+{
 void LineTracker::markLine(int lineNo, int startPos)
 {
     lineStartPositions[lineNo] = startPos;
@@ -58,4 +59,5 @@ void LineTracker::line(int i, int &start, int &len)
         len = 0;
     else
         len = lineStartPositions[i+1] - start;
+}
 }

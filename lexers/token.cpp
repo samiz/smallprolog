@@ -1,5 +1,7 @@
 #include "token.h"
 
+namespace Lex
+{
 Token::Token(QString Lexeme, TokenType Type, int Pos, int Line, int Column)
     : Lexeme(Lexeme), Type(Type),Pos(Pos), Line(Line), Column(Column)
 {
@@ -38,3 +40,4 @@ bool Token::Is(TokenType type)
     return Type == type;
 }
 
+}

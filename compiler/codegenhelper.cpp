@@ -7,6 +7,8 @@
 
 #include "codegenhelper.h"
 
+namespace Prolog
+{
 CodeGenerator::CodeGenerator()
 {
     Init();
@@ -100,4 +102,5 @@ void CodeGenerator::genFmt(QString fmtStr, QString str0, QString str1)
 void CodeGenerator::genWithMetaData(int metaData, QString str)
 {
     gen(str+ "@"+ QString("%1").arg(metaData));
+}
 }

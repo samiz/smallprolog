@@ -1,5 +1,6 @@
 #include "prologlexer.h"
 
+using namespace Lex;
 namespace Prolog
 {
 PrologLexer::PrologLexer()

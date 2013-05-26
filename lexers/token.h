@@ -1,10 +1,12 @@
-#ifndef TOKEN_H
-#define TOKEN_H
+#ifndef PL_TOKEN_H
+#define PL_TOKEN_H
 
 #include <QString>
 
 typedef int TokenType;
 
+namespace Lex
+{
 struct Token
 {
     QString Lexeme;
@@ -25,5 +27,5 @@ struct Token
 
 
 };
-
+}
 #endif // TOKEN_H

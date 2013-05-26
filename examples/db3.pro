@@ -5,4 +5,4 @@ clauses
 main():-
     assert(parent(samy, mohamed)),
     assert(parent(mohamed,mira)),
-    parent(X,Y).
+    parent(samy,Y).

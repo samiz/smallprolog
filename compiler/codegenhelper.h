@@ -5,13 +5,15 @@
 **   as described in the included license.txt file
 **************************************************************************/
 
-#ifndef CODEGENHELPER_H
-#define CODEGENHELPER_H
+#ifndef PL_CODEGENHELPER_H
+#define PL_CODEGENHELPER_H
 
 #include <QString>
 #include <QStringList>
 #include <QMap>
 
+namespace Prolog
+{
 class CodeGenerator
 {
     QStringList Output;
@@ -46,5 +48,5 @@ public:
     QString uniqueLambda();
     QString makeStringConstant(QString str);
 };
-
+}
 #endif // CODEGENHELPER_H

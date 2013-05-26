@@ -1,7 +1,7 @@
 #ifndef PROLOGPARSER_H
 #define PROLOGPARSER_H
 
-#include "parser.h"
+#include "./parser.h"
 #include "../data/program.h"
 
 namespace Prolog

@@ -1,10 +1,12 @@
 #ifndef STRBUFFER_H
 #define STRBUFFER_H
 
-#include "buffer.h"
-#include "linetracker.h"
-template<class BufferType>
+#include "./buffer.h"
+#include "./linetracker.h"
 
+namespace Lex
+{
+template<class BufferType>
 struct StringBufferState : public BufferState<BufferType>
 {
     int CurrentLine, CurrentLineStartPos;
@@ -12,11 +14,11 @@ struct StringBufferState : public BufferState<BufferType>
 
 QChar strAt(QString &s, int i);
 
-class StrBuffer : public Buffer<QString, QChar, strAt, StringBufferState<StrBuffer>,
+class StrBuffer : public Lex::Buffer<QString, QChar, strAt, StringBufferState<StrBuffer>,
         StrBuffer>
 {
     int CurrentLine, CurrentLineStartPos;
-    LineTracker tracker;
+    Lex::LineTracker tracker;
 public:
     typedef StringBufferState<StrBuffer> State;
 
@@ -113,5 +115,5 @@ public:
             */
     }
 };
-
+}
 #endif // STRBUFFER_H

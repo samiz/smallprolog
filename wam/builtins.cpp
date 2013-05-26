@@ -3,12 +3,12 @@
 namespace Prolog
 {
 
-inline shared_ptr<Term::Term> PopTerm(Wam &wam, const QString &, int)
+inline shared_ptr<Term::Term> PopTerm(Wam::Wam &wam, const QString &, int)
 {
     return wam.operandStack.pop();
 }
 
-inline bool PopGround(Wam &vm, const QString &fname, int argn, shared_ptr<Term::Term> &ret)
+inline bool PopGround(Wam::Wam &vm, const QString &fname, int argn, shared_ptr<Term::Term> &ret)
 {
     shared_ptr<Term::Term> a = vm.operandStack.pop();
     shared_ptr<Term::Term> ag;
@@ -21,7 +21,20 @@ inline bool PopGround(Wam &vm, const QString &fname, int argn, shared_ptr<Term::
     return true;
 }
 
-inline bool PopInt(Wam &vm, const QString &fname, int argn, int &ret)
+inline bool PopCompound(Wam::Wam &vm, const QString &fname, int argn, shared_ptr<Term::Compound> &ret)
+{
+    shared_ptr<Term::Term> a = vm.operandStack.pop();
+    shared_ptr<Term::Compound> ac = dynamic_pointer_cast<Term::Compound>(a);
+    if(!ac)
+    {
+        vm.error(QString("%1: argument %2 not a compund term").arg(fname).arg(argn));
+        return false;
+    }
+    ret = ac;
+    return true;
+}
+
+inline bool PopInt(Wam::Wam &vm, const QString &fname, int argn, int &ret)
 {
     shared_ptr<Term::Term> a = vm.operandStack.pop();
     shared_ptr<Term::Term> ag;
@@ -40,7 +53,7 @@ inline bool PopInt(Wam &vm, const QString &fname, int argn, int &ret)
     return true;
 }
 
-inline bool PopStr(Wam &vm, const QString &fname, int argn, QString &ret)
+inline bool PopStr(Wam::Wam &vm, const QString &fname, int argn, QString &ret)
 {
     shared_ptr<Term::Term> a = vm.operandStack.pop();
     shared_ptr<Term::Term> ag;
@@ -59,7 +72,7 @@ inline bool PopStr(Wam &vm, const QString &fname, int argn, QString &ret)
     return true;
 }
 
-void sqrt(Wam &vm)
+void sqrt(Wam::Wam &vm)
 {
     int ii;
     if(!PopInt(vm, "sqrt", 1, ii))
@@ -72,7 +85,7 @@ void sqrt(Wam &vm)
     vm.unify(result, b);
 }
 
-void plus(Wam &vm)
+void plus(Wam::Wam &vm)
 {
     int a,b;
     if(!(PopInt(vm, "+", 1, a)
@@ -88,7 +101,7 @@ void plus(Wam &vm)
     vm.unify(result, c);
 }
 
-void minus(Wam &vm)
+void minus(Wam::Wam &vm)
 {
     int a,b;
     if(!(PopInt(vm, "-", 1, a)
@@ -103,7 +116,7 @@ void minus(Wam &vm)
     vm.unify(result, c);
 }
 
-void mul(Wam &vm)
+void mul(Wam::Wam &vm)
 {
     int a,b;
     if(!(PopInt(vm, "*", 1, a)
@@ -118,7 +131,7 @@ void mul(Wam &vm)
     vm.unify(result, c);
 }
 
-void div(Wam &vm)
+void div(Wam::Wam &vm)
 {
     int a,b;
     if(!(PopInt(vm, "/", 1, a)
@@ -133,7 +146,7 @@ void div(Wam &vm)
     vm.unify(result, c);
 }
 
-void concat(Wam &vm)
+void concat(Wam::Wam &vm)
 {
     QString a,b;
     if(!(PopStr(vm, "++", 1, a)
@@ -148,7 +161,7 @@ void concat(Wam &vm)
     vm.unify(result, c);
 }
 
-void lt(Wam &vm)
+void lt(Wam::Wam &vm)
 {
     shared_ptr<Term::Term> a,b;
     if(!(PopGround(vm,"<",1, a)
@@ -160,7 +173,7 @@ void lt(Wam &vm)
         vm.fail();
 }
 
-void gt(Wam &vm)
+void gt(Wam::Wam &vm)
 {
     shared_ptr<Term::Term> a,b;
     if(!(PopGround(vm,">",1, a)
@@ -174,7 +187,7 @@ void gt(Wam &vm)
     }
 }
 
-void le(Wam &vm)
+void le(Wam::Wam &vm)
 {
     shared_ptr<Term::Term> a,b;
     if(!(PopGround(vm,"<=",1, a)
@@ -182,13 +195,13 @@ void le(Wam &vm)
     {
         return;
     }
-    if(!a->lt(b) || !a->equals(b))
+    if(!(a->lt(b) || a->equals(b)))
     {
         vm.fail();
     }
 }
 
-void ge(Wam &vm)
+void ge(Wam::Wam &vm)
 {
     shared_ptr<Term::Term> a,b;
     if(!(PopGround(vm,">=",1, a)
@@ -202,7 +215,7 @@ void ge(Wam &vm)
     }
 }
 
-void ne(Wam &vm)
+void ne(Wam::Wam &vm)
 {
     shared_ptr<Term::Term> a,b;
     if(!(PopGround(vm,"<>",1, a)
@@ -216,7 +229,7 @@ void ne(Wam &vm)
     }
 }
 
-void assert(Wam &vm)
+void assert(Wam::Wam &vm)
 {
     shared_ptr<Term::Term> a;
     if(!PopGround(vm,"assert",1, a))
@@ -231,6 +244,19 @@ void assert(Wam &vm)
     vm.dbHelper.assert(dynamic_pointer_cast<Term::Compound>(a));
 }
 
-
+void delete_(Wam::Wam &vm)
+{
+    shared_ptr<Term::Compound> a;
+    if(!PopCompound(vm,"delete",1, a))
+    {
+        return;
+    }
+    if(a->tag != Term::TermCompund)
+    {
+        vm.error(QString("assert: expected compound value, given %1").arg(a->toString()));
+        return;
+    }
+    vm.dbHelper.delete_(a, vm);
+}
 
 }

@@ -17,6 +17,10 @@ void PrologParser::parse()
     predicatesSection();
     clausesSection();
     goalSection();
+    if(!eof())
+    {
+        errors.append(QString("Parser didn't consume all input, now at %1,%2").arg(lookAhead->Pos).arg(lookAhead->Lexeme));
+    }
 }
 
 void PrologParser::domainsSection()
@@ -78,12 +82,32 @@ void PrologParser::factsSection()
                 expect(Prolog::Symbol);
                 shared_ptr<Token> aType = chomp();
                 f->argTypes.append(aType->Lexeme);
+                if(LA(Prolog::Symbol))
+                {
+                    shared_ptr<Token> aName= chomp();
+                    f->argNames.append(aName->Lexeme);
+                }
+                else
+                {
+                    f->argNames.append("");
+                }
+
+
                 while(LA(Prolog::Comma))
                 {
                     match(Prolog::Comma);
                     expect(Prolog::Symbol);
                     aType = chomp();
                     f->argTypes.append(aType->Lexeme);
+                    if(LA(Prolog::Symbol))
+                    {
+                        shared_ptr<Token> aName= chomp();
+                        f->argNames.append(aName->Lexeme);
+                    }
+                    else
+                    {
+                        f->argNames.append("");
+                    }
                 }
             }
             match(Prolog::RParen);

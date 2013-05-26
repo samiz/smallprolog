@@ -1,12 +1,14 @@
-#ifndef OPERANDSTACK_H
-#define OPERANDSTACK_H
+#ifndef PL_OPERANDSTACK_H
+#define PL_OPERANDSTACK_H
 
-#include "stack.h"
+#include "./stack.h"
 #include "../data/terms.h"
-#include "binding.h"
+#include "./binding.h"
 #include <memory>
 using namespace std;
 
+namespace Wam
+{
 const int fourK = 4096;
 const int ValueSize = 16;
 const int trailCount = 1024;
@@ -16,4 +18,5 @@ const int OperandStackChunkSize = fourK / ValueSize;
 
 typedef Stack<shared_ptr<Term::Term>, OperandStackChunkSize> OperandStack;
 typedef Stack<Binding, trailCount> TrailStack;
+}
 #endif // OPERANDSTACK_H

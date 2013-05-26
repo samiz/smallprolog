@@ -40,6 +40,7 @@ struct Term
     }
     virtual bool ground() { return false; }
     virtual uint var() { return -1;}
+    virtual QVariant toVariant()=0;
 };
 
 struct Atom : public Term
@@ -71,6 +72,7 @@ struct Int : public Atom
         }
         return false;
     }
+    QVariant toVariant() { return value; }
 };
 
 struct Symbol : public Atom
@@ -96,6 +98,7 @@ struct Symbol : public Atom
         }
         return false;
     }
+    QVariant toVariant() { return value; }
 };
 
 struct String : public Atom
@@ -121,6 +124,7 @@ struct String : public Atom
         }
         return false;
     }
+    QVariant toVariant() { return value; }
 };
 
 struct Id : public Term
@@ -128,6 +132,7 @@ struct Id : public Term
     QString name;
     Id(QString name) : Term(TermId), name(name) { }
     QString toString() { return name; }
+    QVariant toVariant() { return name; }
 };
 
 struct Var : public Term
@@ -136,6 +141,7 @@ struct Var : public Term
     QString toString() { return QString("v%1").arg(name); }
     Var(uint name) : Term(TermVar), name(name) { }
     uint var() { return name;}
+    QVariant toVariant() { return name; }
 };
 
 struct DbQuery : public Term
@@ -143,6 +149,7 @@ struct DbQuery : public Term
     QSqlQuery q;
     DbQuery(QSqlQuery q) : Term(TermQuery),q(q) { }
     QString toString() { return "<sql query>"; }
+    QVariant toVariant() { return "<sql query>"; }
 };
 
 /*
@@ -239,6 +246,7 @@ struct Compound : public Term
         }
         return false;
     }
+    QVariant toVariant() { return toString(); }
 };
 
 inline shared_ptr<Int> makeInt(int i) { return make_shared<Int>(i); }

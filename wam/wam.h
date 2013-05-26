@@ -5,11 +5,13 @@
 #include <QStack>
 #include <QMap>
 #include <functional>
-#include "../data/sexpression.h"
 #include "../dbhelper.h"
-#include "operandstack.h"
+#include "./operandstack.h"
 
 using namespace std;
+class SExpression;
+namespace Wam
+{
 enum OpCode
 {
     PushV,
@@ -85,13 +87,16 @@ public:
     QStack<ChoicePoint> choicePoints;
     QMap<QString, shared_ptr<Method> > predicates;
     QMap<QString, function<void(Wam &)> > externalMethods;
+    inline shared_ptr<Term::Var> newVar() { return Term::makeVar(newVarCount++); }
     int IP;
     int currentFrame;
 public:
     void Load(const QVector<shared_ptr<SExpression> > &code);
     void Init();
+    void OpenDb();
+    void CloseDb();
     void Finished();
-    void Run(QString main);
+    void Run(QString main, QMap<QString, shared_ptr<Term::Term> > bindings=QMap<QString, shared_ptr<Term::Term> >());
     void RegisterExternal(QString name, function<void(Wam &)> f);
     void query(QString tableName);
     shared_ptr<Term::Term> resultToTerm(int i, QSqlQuery &q, Term::Tag type);
@@ -110,5 +115,5 @@ public:
     QMap<QString, shared_ptr<Term::Term> > resolveAll
     (QMap<QString, shared_ptr<Term::Term> >env);
 };
-
+}
 #endif // WAM_H

@@ -6,9 +6,8 @@
 #include <QMap>
 #include <memory>
 using namespace std;
-
-#include "./lexers/token.h"
-
+#include "../lexers/token.h"
+using namespace Lex;
 struct Ast
 {
     int type;

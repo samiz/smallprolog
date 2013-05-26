@@ -1,6 +1,8 @@
 #include "wam.h"
+#include "../data/sexpression.h"
 #include <QDebug>
-
+namespace Wam
+{
 void Wam::Load(QVector<shared_ptr<SExpression> > const &code)
 {
     for(auto i=code.begin(); i!=code.end(); ++i)
@@ -31,12 +33,15 @@ void Wam::Load(QVector<shared_ptr<SExpression> > const &code)
         else if(expr->match("fact", factName, rest))
         {
             shared_ptr<Prolog::Fact> fact = make_shared<Prolog::Fact>(factName);
-            factArities[factName] = arity;
+            arity = 0;
+
             factArgTypes[factName] = QVector<Term::Tag>();
-            rest->forEach([this, &factName, &fact](shared_ptr<SExpression> tt){
+            rest->forEach([this, &factName, &fact,&arity](shared_ptr<SExpression> tt){
                 this->factArgTypes[factName].append(termTypeOf(tt->toString()));
                 fact->argTypes.append(tt->toString());
+                arity++;
             });
+            factArities[factName] = arity;
             facts[factName] = fact;
         }
         else
@@ -164,22 +169,24 @@ void Wam::query(QString tableName)
     int arity = factArities[tableName];
     QStringList wheres;
     int n = operandStack.count()-1;
+    QVector<QVariant> args;
     for(int i=0; i<arity; ++i)
     {
         shared_ptr<Term::Term> arg = operandStack[n-i];
-        shared_ptr<Term::Term> groundArg = operandStack[n-i];
+        shared_ptr<Term::Term> groundArg;
         if(ground(arg, groundArg))
         {
             wheres.append(QString("c%1=?").arg(i));
+            args.append(dbHelper.termToQVariant(groundArg));
         }
     }
-    QString whereClause=n?wheres.join(" AND "):"";
-    QString query = QString("SELECT * FROM %1 %2")
+    QString whereClause=(wheres.count()!=0)?QString(" WHERE %1").arg(wheres.join(" AND ")):"";
+    QString query = QString("SELECT * FROM %1%2")
             .arg(tableName)
             .arg(whereClause);
     QSqlQuery q;
 
-    if(!dbHelper.find(query, q))
+    if(!dbHelper.find(query, q, args))
     {
         error(QString("Failed to execute query: %1").arg(query));
         return;
@@ -215,6 +222,18 @@ void Wam::error(QString s)
     done = true;
 }
 
+
+void Wam::OpenDb()
+{
+    dbHelper.open();
+    dbHelper.createTables(facts);
+}
+
+void Wam::CloseDb()
+{
+    dbHelper.close();
+}
+
 void Wam::Init()
 {
     callStack.clear();
@@ -222,16 +241,13 @@ void Wam::Init()
     choicePoints.clear();
     solutions.clear();
     operandStack.clear();
-    dbHelper.open();
-    dbHelper.createTables(facts);
 }
 
 void Wam::Finished()
 {
-    dbHelper.close();
 }
 
-void Wam::Run(QString main)
+void Wam::Run(QString main, QMap<QString, shared_ptr<Term::Term> > bindings)
 {
     newVarCount = 0;
     IP = 0;
@@ -241,6 +257,11 @@ void Wam::Run(QString main)
     f.parentFrame = -1;
     f.method = predicates[main];
     callStack.push(f);
+
+    for(auto i=bindings.begin(); i!=bindings.end();++i)
+    {
+        callStack[0].Environment[i.key()] = i.value();
+    }
 
     result = false;
     done = false;
@@ -266,7 +287,7 @@ void Wam::Run(QString main)
             frame.Environment[i.arg->toString()] = operandStack.pop();
             break;
         case NewVar:
-            operandStack.push(Term::makeVar(newVarCount++));
+            operandStack.push(newVar());
             break;
         case NewObj:
             if(structArities.contains(i.arg->toString()))
@@ -375,7 +396,7 @@ DbCheckError:
 #ifdef QT_DEBUG
                 qDebug() << dumpTrail();
 #endif
-                errors.append(EnvToString(resolveAll(callStack[0].Environment)));
+                //errors.append(EnvToString(resolveAll(callStack[0].Environment)));
                 solutions.append(resolveAll(callStack[0].Environment));
                 if(!choicePoints.empty())
                     backtrack();
@@ -673,4 +694,5 @@ QString EnvToString(QMap<QString, shared_ptr<Term::Term> > env)
         lst.append(QString("%1=%2").arg(i.key()).arg(i.value()->toString()));
 
     return QString("[%1]").arg(lst.join(", "));
+}
 }

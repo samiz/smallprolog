@@ -5,6 +5,7 @@
 #include "../lexers/token.h"
 #include "../lexers/buffer.h"
 
+using namespace Lex;
 shared_ptr<Token> tokenAt(QVector<shared_ptr<Token> >&v, int i);
 
 class TokenBuffer : public Buffer<

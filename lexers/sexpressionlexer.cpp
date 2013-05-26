@@ -1,5 +1,6 @@
 #include "sexpressionlexer.h"
 
+using namespace Lex;
 SExpressionLexer::SExpressionLexer()
 {
     lexer.rules[SExp::Spacing] = loop1(charOf(" \t\n\r"));

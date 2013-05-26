@@ -1,7 +1,7 @@
 #ifndef SEXPRESSIONPARSER_H
 #define SEXPRESSIONPARSER_H
 
-#include "parser.h"
+#include "./parser.h"
 #include "../data/sexpression.h"
 
 class SExpressionParser : public BaseParser
