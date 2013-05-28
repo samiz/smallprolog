@@ -1,5 +1,3 @@
-domains
-list=nil();pair(any,any).
 clauses
 
 append([],X,X).

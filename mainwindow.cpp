@@ -5,25 +5,32 @@
 #include "./lexers/prologlexer.h"
 #include "./parsers/prologparser.h"
 #include "./compiler/prologcompiler.h"
-#include "./wam/wam.h"
 #include "./wam/builtins.h"
 #include "prologengine.h"
 
 #include <sys/time.h>
 
-MainWindow::MainWindow(QWidget *parent) :
+PrologConsole::PrologConsole(QWidget *parent, Wam::Wam *existingWam) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::PrologConsole)
 {
     ui->setupUi(this);
     this->setCentralWidget(ui->splitter);
-    this->setWindowState(Qt::WindowMaximized);
     this->setWindowTitle(QString::fromStdWString(L"小さい Prolog"));
-    PrologEngine prolog;
-    prolog.load("facts\nprocDef(string)\n");
+
+    if(existingWam)
+    {
+        this->wam = existingWam;
+        ui->txtCode->append("clauses\n\nmain():-\n\n.\n");
+    }
+    else
+    {
+        prepareWam();
+        this->setWindowState(Qt::WindowMaximized);
+    }
 }
 
-MainWindow::~MainWindow()
+PrologConsole::~PrologConsole()
 {
     delete ui;
 }
@@ -33,7 +40,30 @@ QString humanize(QString s)
     return s.replace("\n", "\\n").replace("\t","\\t").replace("\r", "\\r");
 }
 
-void MainWindow::on_actionRun_triggered()
+void PrologConsole::prepareWam()
+{
+    wam = new Wam::Wam();
+    wam->RegisterExternal("sqrt", Prolog::sqrt);
+    wam->RegisterExternal("+", Prolog::plus);
+    wam->RegisterExternal("-", Prolog::minus);
+    wam->RegisterExternal("/", Prolog::div);
+    wam->RegisterExternal("*", Prolog::mul);
+    wam->RegisterExternal("++", Prolog::concat);
+
+    wam->RegisterExternal(">", Prolog::gt);
+    wam->RegisterExternal("<", Prolog::lt);
+    wam->RegisterExternal(">=", Prolog::ge);
+    wam->RegisterExternal("<=", Prolog::le);
+    wam->RegisterExternal("<>", Prolog::ne);
+
+    wam->RegisterExternal("assert", Prolog::assert);
+    wam->RegisterExternal("delete", Prolog::delete_);
+    wam->RegisterExternal("write", Prolog::write);
+    wam->RegisterExternal("dumpTrail", Prolog::dumpTrail);
+
+}
+
+void PrologConsole::on_actionRun_triggered()
 {
    QString source = ui->txtCode->toPlainText();
    QVector<shared_ptr<SExpression> >sexps;
@@ -42,6 +72,8 @@ void MainWindow::on_actionRun_triggered()
 }
 
 // In microseconds
+namespace Timing
+{
 long get_time()
 {
     /*
@@ -52,44 +84,35 @@ long get_time()
     gettimeofday(&tv, NULL);
     return tv.tv_sec * 1000000 + tv.tv_usec;
 }
-
-void MainWindow::runWam(QVector<shared_ptr<SExpression> > &sexps)
-{
-    Wam::Wam wam;
-    wam.Load(sexps);
-    wam.RegisterExternal("sqrt", Prolog::sqrt);
-    wam.RegisterExternal("+", Prolog::plus);
-    wam.RegisterExternal("-", Prolog::minus);
-    wam.RegisterExternal("/", Prolog::div);
-    wam.RegisterExternal("*", Prolog::mul);
-    wam.RegisterExternal("++", Prolog::concat);
-
-    wam.RegisterExternal(">", Prolog::gt);
-    wam.RegisterExternal("<", Prolog::lt);
-    wam.RegisterExternal(">=", Prolog::ge);
-    wam.RegisterExternal("<=", Prolog::le);
-    wam.RegisterExternal("<>", Prolog::ne);
-
-    wam.RegisterExternal("assert", Prolog::assert);
-    wam.RegisterExternal("delete", Prolog::delete_);
-
-    wam.Init();
-    long a,b;
-    a = get_time();
-    wam.Run("main");
-    b = get_time();
-
-    if(wam.errors.count()> 0)
-        ui->txtMessages->append("______________________");
-
-    for(int i=0; i<wam.errors.count(); ++i)
-    {
-        ui->txtMessages->append(wam.errors[i]);
-    }
-    ui->txtMessages->append(QString("Interpreter executed in %1 ms").arg((b-a)/1000));
 }
 
-bool MainWindow::parsePrologCode(Prolog::Program &proggy)
+void PrologConsole::runWam(QVector<shared_ptr<SExpression> > &sexps)
+{
+    wam->Load(sexps);
+    wam->Init();
+    long a,b;
+    a = Timing::get_time();
+    wam->Run("main");
+    b = Timing::get_time();
+
+    if(wam->errors.count()> 0)
+        ui->txtMessages->append("______________________");
+
+    for(int i=0; i<wam->errors.count(); ++i)
+    {
+        ui->txtMessages->append(wam->errors[i]);
+    }
+
+    for(int i=0; i<wam->solutions.count(); ++i)
+    {
+        ui->txtMessages->append(EnvToString(wam->solutions[i]));
+    }
+    ui->txtMessages->append(QString("Interpreter executed in %1 ms").arg((b-a)/1000));
+
+
+}
+
+bool PrologConsole::parsePrologCode(Prolog::Program &proggy)
 {
     bool success = true;
     QString source = ui->txtCode->toPlainText();
@@ -127,6 +150,8 @@ bool MainWindow::parsePrologCode(Prolog::Program &proggy)
     proggy.externalMethods.insert("<>");
     proggy.externalMethods.insert("assert");
     proggy.externalMethods.insert("delete");
+    proggy.externalMethods.insert("write");
+    proggy.externalMethods.insert("dumpTrail");
 
 
     proggy.addStruct("pair", 2);
@@ -160,13 +185,13 @@ bool MainWindow::parsePrologCode(Prolog::Program &proggy)
     return success;
 }
 
-void MainWindow::on_actionParse_prolog_triggered()
+void PrologConsole::on_actionParse_prolog_triggered()
 {
     Prolog::Program proggy;
     parsePrologCode(proggy);
 }
 
-void MainWindow::on_actionCompile_Prolog_triggered()
+void PrologConsole::on_actionCompile_Prolog_triggered()
 {
     Prolog::Program proggy;
     parsePrologCode(proggy);
@@ -177,7 +202,7 @@ void MainWindow::on_actionCompile_Prolog_triggered()
     ui->txtMessages->append(comp.getOutput());
 }
 
-void MainWindow::parseWam(QString source, QVector<shared_ptr<SExpression> >&sexps, bool verbose)
+void PrologConsole::parseWam(QString source, QVector<shared_ptr<SExpression> >&sexps, bool verbose)
 {
     SExp.lexer.init(source);
     SExp.lexer.skipTokens.insert(SExp::Spacing);
@@ -222,14 +247,14 @@ void MainWindow::parseWam(QString source, QVector<shared_ptr<SExpression> >&sexp
     }
 }
 
-void MainWindow::on_actionParse_WAM_triggered()
+void PrologConsole::on_actionParse_WAM_triggered()
 {
     QVector<shared_ptr<SExpression> > sexps;
     QString source = ui->txtCode->toPlainText();
     parseWam(source, sexps);
 }
 
-void MainWindow::on_actionRun_Prolog_triggered()
+void PrologConsole::on_actionRun_Prolog_triggered()
 {
     bool success;
     Prolog::Program proggy;

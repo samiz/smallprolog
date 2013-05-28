@@ -25,13 +25,17 @@ enum OpCode
     DbQuery,
     DbCheck,
     TryMeElse,
-    Proceed
+    Proceed,
+    Fail,
+    SaveCR,
+    Cut
 };
 
 struct ChoicePoint
 {
     int trailIndex;
     int frameIndex;
+    int cutReg;
     QString continuation; // a label
 };
 
@@ -89,6 +93,7 @@ public:
     QMap<QString, function<void(Wam &)> > externalMethods;
     inline shared_ptr<Term::Var> newVar() { return Term::makeVar(newVarCount++); }
     int IP;
+    int CutReg;
     int currentFrame;
 public:
     void Load(const QVector<shared_ptr<SExpression> > &code);
@@ -99,6 +104,11 @@ public:
     void Run(QString main, QMap<QString, shared_ptr<Term::Term> > bindings=QMap<QString, shared_ptr<Term::Term> >());
     void RegisterExternal(QString name, function<void(Wam &)> f);
     void query(QString tableName);
+    void insert(QString tableName, const QVector<QVariant> &args) { dbHelper.insert(tableName, args); }
+
+    void beginTransaction() { dbHelper.beginTransaction();}
+    void endTransaction() { dbHelper.endTransaction(); }
+
     shared_ptr<Term::Term> resultToTerm(int i, QSqlQuery &q, Term::Tag type);
     void error(QString s);
 public:

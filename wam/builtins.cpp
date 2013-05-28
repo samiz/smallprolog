@@ -259,4 +259,15 @@ void delete_(Wam::Wam &vm)
     vm.dbHelper.delete_(a, vm);
 }
 
+void write(Wam::Wam &vm)
+{
+    shared_ptr<Term::Term> a = PopTerm(vm, "write", 1);
+    qDebug() << "Write: " << a->toString();
+}
+
+void dumpTrail(Wam::Wam &vm)
+{
+    qDebug() << vm.dumpTrail();
+}
+
 }

@@ -12,7 +12,7 @@ TARGET = SmallProlog
 #TEMPLATE = app
 TEMPLATE = lib
 CONFIG += staticlib
-
+#DEFINES += PL_VERBOSE_DEBUGGING
 
 SOURCES += main.cpp\
         mainwindow.cpp \

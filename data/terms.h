@@ -210,12 +210,27 @@ struct Compound : public Term
         QStringList ret;
         ret.append(args[0]->toString());
 
-        shared_ptr<Compound> c = dynamic_pointer_cast<Compound>(args[1]);
-        while(c && c->functor->toString() == "pair")
+        shared_ptr<Term> c = args[1];
+
+        while(true)
         {
-            ret.append(c->args[0]->toString());
-            c = dynamic_pointer_cast<Compound>(c->args[1]);
+            shared_ptr<Compound> cc = dynamic_pointer_cast<Compound>(c);
+            if(!cc)
+            {
+                ret.append(QString("|%1").arg(c->toString()));
+                break;
+            }
+            else if(cc->functor->toString() == "pair")
+            {
+                ret.append(cc->args[0]->toString());
+                c = cc->args[1];
+            }
+            else
+            {
+                break;
+            }
         }
+
         return QString("[%1]").arg(ret.join(", "));
     }
 

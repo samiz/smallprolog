@@ -22,7 +22,7 @@ void Wam::Load(QVector<shared_ptr<SExpression> > const &code)
             });
             predicates[predName] = method;
             //errors.append(QString("Loaded %1").arg(method->toString()));
-#ifdef QT_DEBUG
+#if defined(QT_DEBUG) && defined(PL_VERBOSE_DEBUGGING)
             qDebug() << "Loaded: " << method->toString();
 #endif
         }
@@ -143,6 +143,18 @@ void Wam::processInstruction(shared_ptr<SExpression> inst, shared_ptr<Method> co
     {
         method->Instructions.append(Instruction(Proceed));
     }
+    else if(inst->matchLst("fail"))
+    {
+        method->Instructions.append(Instruction(Fail));
+    }
+    else if(inst->matchLst("savecr"))
+    {
+        method->Instructions.append(Instruction(SaveCR));
+    }
+    else if(inst->matchLst("cut"))
+    {
+        method->Instructions.append(Instruction(Cut));
+    }
     else
     {
         errors.append(QString("Invalid instruction format: %1").arg(inst->toString()));
@@ -241,6 +253,8 @@ void Wam::Init()
     choicePoints.clear();
     solutions.clear();
     operandStack.clear();
+    errors.clear();
+    newVarCount = 0;
 }
 
 void Wam::Finished()
@@ -249,13 +263,21 @@ void Wam::Finished()
 
 void Wam::Run(QString main, QMap<QString, shared_ptr<Term::Term> > bindings)
 {
-    newVarCount = 0;
     IP = 0;
     currentFrame = 0;
     Frame f;
     f.Ip = -1; // unused
     f.parentFrame = -1;
+
     f.method = predicates[main];
+    if(!f.method)
+    {
+        errors.append(QString("Wam::Run() cannot find method %1").arg(main));
+#ifdef QT_DEBUG
+        qDebug() << "Wam::Run() cannot find main method: " << main;
+#endif
+        return;
+    }
     callStack.push(f);
 
     for(auto i=bindings.begin(); i!=bindings.end();++i)
@@ -279,7 +301,7 @@ void Wam::Run(QString main, QMap<QString, shared_ptr<Term::Term> > bindings)
             break;
         case PushLocal:
             operandStack.push(frame.Environment[i.arg->toString()]);
-#ifdef QT_DEBUG
+#if defined(QT_DEBUG) && defined(PL_VERBOSE_DEBUGGING)
             qDebug() << "Pushing " << frame.Environment[i.arg->toString()]->toString() << "\n";
 #endif
             break;
@@ -319,7 +341,7 @@ void Wam::Run(QString main, QMap<QString, shared_ptr<Term::Term> > bindings)
             f2.Ip = IP;
             f2.method = predicates[i.arg->toString()];
             f2.parentFrame = currentFrame;
-#ifdef QT_DEBUG
+#if defined(QT_DEBUG) && defined(PL_VERBOSE_DEBUGGING)
             qDebug() << "Calling: " << i.arg->toString()
                  << " from " << callStack[currentFrame].method->name;
 #endif
@@ -362,6 +384,7 @@ void Wam::Run(QString main, QMap<QString, shared_ptr<Term::Term> > bindings)
                 cp = ChoicePoint();
                 cp.trailIndex = trail.count();
                 cp.frameIndex = currentFrame;
+                cp.cutReg = CutReg;
                 cp.continuation = "q";
                 choicePoints.push(cp);
 
@@ -387,13 +410,14 @@ DbCheckError:
             cp.trailIndex = trail.count();
             cp.frameIndex = currentFrame;
             cp.continuation = i.arg->toString();
+            cp.cutReg = CutReg;
             choicePoints.push(cp);
             break;
         case Proceed:
             if(currentFrame==0)
             {
                 result = true;
-#ifdef QT_DEBUG
+#if defined(QT_DEBUG) && defined(PL_VERBOSE_DEBUGGING)
                 qDebug() << dumpTrail();
 #endif
                 //errors.append(EnvToString(resolveAll(callStack[0].Environment)));
@@ -411,6 +435,24 @@ DbCheckError:
                 currentFrame = callStack[currentFrame].parentFrame;
             }
             break;
+        case Fail:
+            fail();
+            break;
+        case SaveCR:
+            CutReg = choicePoints.count();
+            break;
+        case Cut:
+            while(choicePoints.count() > CutReg)
+            {
+                choicePoints.pop();
+            }
+            if(choicePoints.count() >0)
+            {
+                const ChoicePoint &cp = choicePoints.top();
+                while(trail.count() > cp.trailIndex)
+                    trail.pop();
+            }
+            break;
         }
     }
     Finished();
@@ -420,9 +462,10 @@ void Wam::backtrack()
 {
     ChoicePoint cp = choicePoints.pop();
     currentFrame = cp.frameIndex;
+    CutReg = cp.cutReg;
     while(trail.count() > cp.trailIndex)
         trail.pop();
-#ifdef QT_DEBUG
+#if defined(QT_DEBUG) && defined(PL_VERBOSE_DEBUGGING)
     qDebug() << "Backtrack to: " << cp.continuation;
 #endif
     IP = callStack[currentFrame].method->labels[cp.continuation];
@@ -472,7 +515,7 @@ bool Wam::ground(shared_ptr<Term::Term> const &t, shared_ptr<Term::Term> &ret)
 
 void Wam::bind(uint var, shared_ptr<Term::Term> const &val)
 {
-#ifdef QT_DEBUG
+#if defined(QT_DEBUG) && defined(PL_VERBOSE_DEBUGGING)
     qDebug() << "Unify: binding " << var << " and "
          << val->toString() << endl;
 #endif
@@ -552,7 +595,7 @@ bool Wam::unify(shared_ptr<Term::Term> t1, shared_ptr<Term::Term> t2)
     }
 
     // both free vars
-#ifdef QT_DEBUG
+#if defined(QT_DEBUG) && defined(PL_VERBOSE_DEBUGGING)
     qDebug() << "Trail..." << dumpTrail();
 #endif
     uint t1s = t1->var();
@@ -657,6 +700,9 @@ QString OpcodeToString(OpCode op)
     case DbCheck: return "DbCheck";
     case TryMeElse: return "TryMeElse";
     case Proceed: return "Proceed";
+    case Fail: return "Fail";
+    case SaveCR: return "SaveCR";
+    case Cut: return "Cut";
     }
     return "<unknown>";
 }

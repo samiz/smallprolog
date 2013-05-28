@@ -18,6 +18,7 @@ public:
     void compile();
     void compileFact(shared_ptr<Fact> const &fact);
     void compileClause(QVector<shared_ptr<Clause> > &clauseBodies);
+    void generateInvokation(shared_ptr<Term::Compound> tc, QSet<QString> &vars);
     void generateExpression(shared_ptr<Term::Term> targ, QSet<QString> &vars);
     void bindClauseHead(shared_ptr<Term::Compound> &head, QSet<QString> &vars);
     QString getOutput() { return g.getOutput(); }

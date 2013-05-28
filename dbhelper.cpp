@@ -17,14 +17,15 @@ DBHelper::DBHelper()
 
 bool DBHelper::open()
 {
-
-
     if(!db.open())
     {
         return false;
     }
     QSqlQuery pragma(db);
     pragma.exec("PRAGMA foreign_keys = ON;");
+    pragma.exec("PRAGMA synchronous = OFF");
+    pragma.exec("PRAGMA journal_mode = OFF");
+
 
     prepareQueries();
     _isOpen = true;
@@ -33,6 +34,22 @@ bool DBHelper::open()
 
 void DBHelper::prepareQueries()
 {
+}
+
+void DBHelper::beginTransaction()
+{
+    if(!db.transaction())
+    {
+        qDebug() << db.lastError().text();
+    }
+}
+
+void DBHelper::endTransaction()
+{
+    if(!db.commit())
+    {
+        qDebug() << db.lastError().text();
+    }
 }
 
 void DBHelper::createTables(QMap<QString, shared_ptr<Prolog::Fact> > &schema)
@@ -76,10 +93,14 @@ void DBHelper::createTables(QMap<QString, shared_ptr<Prolog::Fact> > &schema)
                     .arg(f->name)
                     .arg(tableSpec.join(", "))
                     );
-        insertQueries[f->name] = QString("INSERT INTO %1(%2) VALUES(%3);")
-                .arg(f->name)
-               .arg(colNames.join(","))
-               .arg(questionMarks.join(","));
+
+        QString insertQ = QString("INSERT INTO %1(%2) VALUES(%3);").arg(f->name)
+                .arg(colNames.join(","))
+                .arg(questionMarks.join(","));
+
+
+        insertQueriesText[f->name] = insertQ;
+
     }
 
     for(int i=0; i<tableCreationStrings.count(); ++i)
@@ -93,6 +114,15 @@ void DBHelper::createTables(QMap<QString, shared_ptr<Prolog::Fact> > &schema)
            qDebug() << q.lastError().databaseText() << "/" << q.lastError().driverText();
         }
     }
+    for(auto i=insertQueriesText.begin(); i!=insertQueriesText.end();++i)
+    {
+        QSqlQuery iq(db);
+        if(!iq.prepare(i.value()))
+        {
+            qDebug() << "Error in query:" << i.value() << ":" << iq.lastError().databaseText() << "/" << iq.lastError().driverText();
+        }
+        insertQueries[i.key()] = iq;
+    }
 }
 
 void DBHelper::close()
@@ -103,24 +133,26 @@ void DBHelper::close()
 
 void DBHelper::assert(shared_ptr<Term::Compound> row)
 {
-    QSqlQuery q(db);
-    QString tableName = row->functor->toString();
-    if(!q.prepare(insertQueries[tableName]))
-    {
-        qDebug() << "Error in query:" << insertQueries[tableName] << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-        return;
-    }
+    const QString tableName = row->functor->toString();
+    QSqlQuery &q = insertQueries[tableName];
+
     for(int i=0;i<row->args.count(); ++i)
     {
         shared_ptr<Term::Term> col = row->args[i];
         q.bindValue(i, termToQVariant(col));
     }
-    exec(q, insertQueries[tableName]);
+    exec(q, insertQueriesText[tableName]);
 }
 
-QVariant DBHelper::termToQVariant(const shared_ptr<Term::Term> &t)
+void DBHelper::insert(QString tableName, const QVector<QVariant> &args)
 {
-   return t->toVariant();
+    QSqlQuery &q = insertQueries[tableName];
+
+    for(int i=0;i<args.count(); ++i)
+    {
+        q.bindValue(i, args[i]);
+    }
+    exec(q, insertQueriesText[tableName]);
 }
 
 void DBHelper::delete_(shared_ptr<Term::Compound> a, Wam &wam)
@@ -166,6 +198,9 @@ bool DBHelper::find(const QString &query, QSqlQuery &result, const QVector<QVari
 
     if(exec(q, query))
     {
+#ifdef QT_DEBUG
+        qDebug() << "Query " << query << " returned " << q.size() << "rows";
+#endif
         result = q;
         return true;
     }
@@ -193,201 +228,4 @@ bool DBHelper::exec(QSqlQuery &q, const QString &query)
     return result;
 }
 
-bool DBHelper::exec(QString query)
-{
-    QSqlQuery q(db);
-    q.prepare(query);
-    bool result = q.exec();
-    if(!result)
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-    }
-    return result;
-}
-
-bool DBHelper::exec(QString query, QVariant arg1)
-{
-    QSqlQuery q(db);
-    if(!q.prepare(query))
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-        return false;
-    }
-    q.addBindValue(arg1);
-    bool result = q.exec();
-    if(!result)
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-    }
-    return result;
-}
-
-bool DBHelper::exec(QString query, QVariant arg1, QVariant arg2)
-{
-    QSqlQuery q(db);
-    if(!q.prepare(query))
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-        return false;
-    }
-    q.addBindValue(arg1);
-    q.addBindValue(arg2);
-    bool result = q.exec();
-    if(!result)
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-    }
-    return result;
-}
-
-bool DBHelper::exec(QString query, QVariant arg1, QVariant arg2, QVariant arg3)
-{
-    QSqlQuery q(db);
-    if(!q.prepare(query))
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-        return false;
-    }
-    q.addBindValue(arg1);
-    q.addBindValue(arg2);
-    q.addBindValue(arg3);
-
-    bool result = q.exec();
-    if(!result)
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-    }
-    return result;
-}
-
-bool DBHelper::exec(QString query, QVariant arg1, QVariant arg2, QVariant arg3, QVariant arg4)
-{
-    QSqlQuery q(db);
-    if(!q.prepare(query))
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-        return false;
-    }
-    q.addBindValue(arg1);
-    q.addBindValue(arg2);
-    q.addBindValue(arg3);
-    q.addBindValue(arg4);
-
-    bool result = q.exec();
-    if(!result)
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-    }
-    return result;
-}
-
-bool DBHelper::exec(QString query, QVariant arg1, QVariant arg2, QVariant arg3, QVariant arg4, QVariant arg5)
-{
-    QSqlQuery q(db);
-    if(!q.prepare(query))
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-        return false;
-    }
-    q.addBindValue(arg1);
-    q.addBindValue(arg2);
-    q.addBindValue(arg3);
-    q.addBindValue(arg4);
-    q.addBindValue(arg5);
-
-    bool result = q.exec();
-    if(!result)
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-    }
-    return result;
-}
-
-bool DBHelper::exec(QString query, QVariant arg1, QVariant arg2, QVariant arg3,
-                           QVariant arg4, QVariant arg5, QVariant arg6)
-{
-    QSqlQuery q(db);
-    if(!q.prepare(query))
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-        return false;
-    }
-    q.addBindValue(arg1);
-    q.addBindValue(arg2);
-    q.addBindValue(arg3);
-    q.addBindValue(arg4);
-    q.addBindValue(arg5);
-    q.addBindValue(arg6);
-
-    bool result = q.exec();
-    if(!result)
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-    }
-    return result;
-}
-
-QSqlQuery DBHelper::q(QSqlQuery &q, const QString &query)
-{
-    bool result = q.exec();
-    if(!result)
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-    }
-    return q;
-}
-
-QSqlQuery DBHelper::q(QString query, QVariant arg1)
-{
-    QSqlQuery q(db);
-    if(!q.prepare(query))
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-        return q;
-    }
-    q.addBindValue(arg1);
-    bool result = q.exec();
-    if(!result)
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-    }
-    return q;
-}
-
-QSqlQuery DBHelper::q(QString query, QVariant arg1, QVariant arg2)
-{
-    QSqlQuery q(db);
-    if(!q.prepare(query))
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-        return q;
-    }
-    q.addBindValue(arg1);
-    q.addBindValue(arg2);
-    bool result = q.exec();
-    if(!result)
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-    }
-    return q;
-}
-
-QSqlQuery DBHelper::q(QString query, QVariant arg1, QVariant arg2, QVariant arg3)
-{
-    QSqlQuery q(db);
-    if(!q.prepare(query))
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-        return q;
-    }
-    q.addBindValue(arg1);
-    q.addBindValue(arg2);
-    q.addBindValue(arg3);
-    bool result = q.exec();
-    if(!result)
-    {
-        qDebug() << "Error in query:" << query << ":" << q.lastError().databaseText() << "/" << q.lastError().driverText();
-    }
-    return q;
-}
 }

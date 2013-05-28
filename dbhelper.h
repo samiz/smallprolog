@@ -12,7 +12,8 @@ class DBHelper
 {
     QSqlDatabase db;
     bool _isOpen;
-    QMap<QString, QString> insertQueries;
+    QMap<QString, QSqlQuery> insertQueries;
+    QMap<QString, QString> insertQueriesText;
 public:
     DBHelper();
     bool open();
@@ -22,24 +23,17 @@ public:
     bool isOpen() { return _isOpen; }
 
     void assert(shared_ptr<Term::Compound> row);
+    void insert(QString tableName, const QVector<QVariant> &args);
     void delete_(shared_ptr<Term::Compound> a, Wam &wam);
     bool find(const QString &query, QSqlQuery &result, const QVector<QVariant> &conditions);
-    QSqlQuery q(QSqlQuery &q, const QString &query);
-    QSqlQuery q(QString query, QVariant);
-    QSqlQuery q(QString query, QVariant arg1, QVariant arg2);
-    QSqlQuery q(QString query, QVariant arg1, QVariant arg2, QVariant arg3);
 
-    QVariant termToQVariant(const shared_ptr<Term::Term> &t);
+    void beginTransaction();
+    void endTransaction();
+
+    inline QVariant termToQVariant(const shared_ptr<Term::Term> &t) { return t->toVariant(); }
 private:
     void batchCheck(QSqlQuery &query, const QString &q);
-    bool exec(QSqlQuery &q, const QString &query);
-    bool exec(QString query);
-    bool exec(QString query, QVariant);
-    bool exec(QString query, QVariant, QVariant);
-    bool exec(QString query, QVariant, QVariant, QVariant);
-    bool exec(QString query, QVariant, QVariant, QVariant, QVariant);
-    bool exec(QString query, QVariant, QVariant, QVariant, QVariant, QVariant);
-    bool exec(QString query, QVariant, QVariant, QVariant, QVariant, QVariant, QVariant);
+    inline bool exec(QSqlQuery &q, const QString &query);
 
 };
 }

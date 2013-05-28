@@ -20,6 +20,8 @@ void ne(Wam::Wam &vm);
 
 void assert(Wam::Wam &vm);
 void delete_(Wam::Wam &vm);
+void write(Wam::Wam &vm);
+void dumpTrail(Wam::Wam &vm);
 
 }
 #endif // BUILTINS_H

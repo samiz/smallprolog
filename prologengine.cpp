@@ -1,7 +1,7 @@
 #include "prologengine.h"
 #include "parsers/prologparser.h"
 #include "parsers/sexpressionparser.h"
-
+#include "mainwindow.h"
 #include "wam/builtins.h"
 
 PrologEngine::PrologEngine()
@@ -21,6 +21,10 @@ PrologEngine::PrologEngine()
 
     wam.RegisterExternal("assert", Prolog::assert);
     wam.RegisterExternal("delete", Prolog::delete_);
+    wam.RegisterExternal("write", Prolog::write);
+    wam.RegisterExternal("dumpTrail", Prolog::dumpTrail);
+
+    console = NULL;
 }
 
 void PrologEngine::initProgram(Prolog::Program &proggy)
@@ -38,7 +42,8 @@ void PrologEngine::initProgram(Prolog::Program &proggy)
     proggy.externalMethods.insert("<>");
     proggy.externalMethods.insert("assert");
     proggy.externalMethods.insert("delete");
-
+    proggy.externalMethods.insert("write");
+    proggy.externalMethods.insert("dumpTrail");
 
     proggy.addStruct("pair", 2);
     proggy.addStruct("nil", 0);
@@ -47,6 +52,12 @@ void PrologEngine::initProgram(Prolog::Program &proggy)
 void PrologEngine::prepareDb()
 {
     wam.OpenDb();
+}
+
+void PrologEngine::showConsole()
+{
+    console = new PrologConsole(NULL, &this->wam);
+    console->show();
 }
 
 bool PrologEngine::load(QString code)
@@ -240,7 +251,7 @@ void PrologEngine::call(QString proc,
     errors << wam.errors;
     if(!errors.empty())
         return;
-    for(auto i=wam.solutions.begin(); i!=wam.solutions.end();++i)
+    for(auto i=wam.solutions.begin(); i != wam.solutions.end();++i)
     {
         QMap<QString,QVariant> m = convertMap(*i);
         callBack(m);

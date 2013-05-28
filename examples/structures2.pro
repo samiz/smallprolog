@@ -1,5 +1,3 @@
-domains
-list=nil();pair(any,any).
 clauses
 
 member(X,pair(X,T)).

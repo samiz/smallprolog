@@ -9,18 +9,27 @@
 #include <QVariant>
 #include <functional>
 
+class PrologConsole;
+
 class PrologEngine
 {
     Prolog::PrologLexer lexer;
     SExpressionLexer SExp;
     Wam::Wam wam;
+    PrologConsole *console;
 public:
     QStringList errors;
 public:
     PrologEngine();
 
+    void showConsole();
     void prepareDb();
     bool load(QString code);
+
+    void beginTransaction() { wam.beginTransaction();}
+    void endTransaction() { wam.endTransaction(); }
+    void insert(QString tableName, const QVector<QVariant> &args) { wam.insert(tableName, args); }
+
     void call(QString proc,
               QVector<QVariant> const &args,
               std::function<void(QMap<QString,QVariant>)> callBack);

@@ -103,6 +103,42 @@ void PrologCompiler::compileClause(QVector<shared_ptr<Clause> > &clauseBodies)
                     g.gen("(unify)");
 
                 }
+                // If it's in the form not(...), we'll negate
+                // like so:
+                /*
+                 not(A) -->
+                 (try_me_else lbl1)
+                 ....A
+                 (fail)
+                 (label lbl1)
+                */
+                else if(tc->functor->toString()=="not")
+                {
+                    if(tc->args.count() !=1)
+                    {
+                        errors.append(QString("Expression %1: not must have exactly one arg").arg(tc->toString()));
+                    }
+                    else
+                    {
+                        QString lbl = g.uniqueLabel();
+                        g.gen("(savecr)");
+                        g.gen("(try_me_else %1)", lbl);
+
+                        shared_ptr<Term::Compound> invokation
+                                = dynamic_pointer_cast<Term::Compound>(tc->args[0]);
+                        if(invokation)
+                        {
+                            generateInvokation(invokation, vars);
+                            g.gen("(cut)");
+                            g.gen("(fail)");
+                            g.gen(("(label %1)"), lbl);
+                        }
+                        else
+                        {
+                            errors.append(QString("Expression %1: arg to 'not' must be an invokation").arg(tc->toString()));
+                        }
+                    }
+                }
                 else if(tc->functor->toString() == "assert")
                 {
                     generateExpression(tc->args[0], vars);
@@ -111,20 +147,7 @@ void PrologCompiler::compileClause(QVector<shared_ptr<Clause> > &clauseBodies)
                 else
                 {
                     // Otherwise let's invoke
-                    for(int k=tc->args.count()-1; k>=0; --k)
-                    {
-                        shared_ptr<Term::Term> targ = tc->args[k];
-                        generateExpression(targ, vars);
-                    }
-                    // done pushing args
-                    if(program.externalMethods.contains(tc->functor->toString()))
-                    {
-                        g.gen("(callex %1)", tc->functor->toString());
-                    }
-                    else
-                    {
-                        g.gen("(call %1)", tc->functor->toString());
-                    }
+                    generateInvokation(tc, vars);
                 }
             }
         }
@@ -132,6 +155,26 @@ void PrologCompiler::compileClause(QVector<shared_ptr<Clause> > &clauseBodies)
         g.gen("(proceed)");
     }
     g.gen(")");
+}
+
+void PrologCompiler::generateInvokation(shared_ptr<Term::Compound> tc, QSet<QString> &vars)
+{
+    // First push args:
+    for(int k=tc->args.count()-1; k>=0; --k)
+    {
+        shared_ptr<Term::Term> targ = tc->args[k];
+        generateExpression(targ, vars);
+    }
+
+    // Done pushing args, now call:
+    if(program.externalMethods.contains(tc->functor->toString()))
+    {
+        g.gen("(callex %1)", tc->functor->toString());
+    }
+    else
+    {
+        g.gen("(call %1)", tc->functor->toString());
+    }
 }
 
 void PrologCompiler::generateExpression(shared_ptr<Term::Term> targ, QSet<QString> &vars)
@@ -168,7 +211,7 @@ void PrologCompiler::generateExpression(shared_ptr<Term::Term> targ, QSet<QStrin
         int declaredArity = program.structContructors[cc->functor->toString()];
         if(!(declaredArity==cc->args.count()))
         {
-            errors.append(QString("Structure arity use is %1, declared is %2")
+            errors.append(QString("Structure %1 arity use is %2, declared is %3")
                           .arg(cc->functor->toString())
                           .arg(cc->args.count())
                           .arg(declaredArity));
@@ -184,7 +227,6 @@ void PrologCompiler::generateExpression(shared_ptr<Term::Term> targ, QSet<QStrin
 
 void PrologCompiler::bindClauseHead(shared_ptr<Term::Compound> &head, QSet<QString> &vars)
 {
-
     for(int i=0; i<head->args.count(); ++i)
     {
         g.gen("(pushl _A%1)", i);
